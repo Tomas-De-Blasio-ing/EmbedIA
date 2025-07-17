@@ -1,12 +1,8 @@
-import larq as lq
 from tensorflow import keras
 from sklearn import preprocessing, neighbors
 from embedia.utils import melspec
 
 from embedia.core.dummy_layer import DummyLayer
-from embedia.layers.binary_convolution.quantconv2d import QuantConv2D
-from embedia.layers.binary_dense.quantdense import QuantDense
-from embedia.layers.binary_convolution.quantseparable_conv2d import QuantSeparableConv2D
 from embedia.layers.convolution.separable_conv2d import SeparableConv2D
 from embedia.layers.convolution.conv2d import Conv2D
 from embedia.layers.convolution.depthwise_conv2d import DepthwiseConv2D
@@ -73,9 +69,6 @@ dict_layers = {
     keras.layers.RandomTranslation: (DummyLayer, TensorflowWrapper),
     keras.layers.RandomWidth: (DummyLayer, TensorflowWrapper),
     keras.layers.RandomZoom: (DummyLayer, TensorflowWrapper),
-    lq.layers.QuantConv2D: (QuantConv2D, LarqQuantConv2DWrapper),
-    lq.layers.QuantDense: (QuantDense, LarqWrapper),
-    lq.layers.QuantSeparableConv2D: (QuantSeparableConv2D, LarqQuantSeparableConv2DWrapper),
     keras.layers.SeparableConv2D: (SeparableConv2D, TFSeparableConv2DWrapper),
     keras.layers.DepthwiseConv2D: (DepthwiseConv2D, TFConv2DWrapper),
     keras.layers.Conv2D: (Conv2D, TFConv2DWrapper),
@@ -105,3 +98,24 @@ dict_layers = {
     neighbors.KNeighborsClassifier: (KNeighborsClassifier, SKLKnnWrapper),
     neighbors.KNeighborsRegressor: (KNeighborsRegressor, SKLKnnWrapper),
 }
+
+
+
+# register larq related layers only if larq module is installed
+try:
+    import larq as lq
+
+    from embedia.layers.binary_convolution.quantconv2d import QuantConv2D
+    from embedia.layers.binary_dense.quantdense import QuantDense
+    from embedia.layers.binary_convolution.quantseparable_conv2d import QuantSeparableConv2D
+
+    dict_layers.update({
+        lq.layers.QuantConv2D: (QuantConv2D, LarqQuantConv2DWrapper),
+        lq.layers.QuantDense: (QuantDense, LarqWrapper),
+        lq.layers.QuantSeparableConv2D: (QuantSeparableConv2D, LarqQuantSeparableConv2DWrapper),
+
+    })
+except:
+    import warnings
+    warnings.warn("Warning: 'larq' is missing. Certain features requiring binary neural networks may not work.", UserWarning)
+
