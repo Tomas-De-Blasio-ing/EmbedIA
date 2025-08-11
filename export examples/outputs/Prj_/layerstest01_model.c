@@ -91,7 +91,7 @@ void model_predict(data3d_t input, data1d_t * output){
     // Layer name: avg_pool_2
     input = output0;
     static const pooling2d_layer_t avg_pool_2_data = { 2, 2 };
-    avg_pooling2d_layer(avg_pool_2_data, input, &output0);
+    average_pooling2d_layer(avg_pool_2_data, input, &output0);
     // Debug function for layer avg_pool_2
     print_data3d_t("avg_pool_2", output0);
     
@@ -118,7 +118,7 @@ void model_predict(data3d_t input, data1d_t * output){
     // Layer name: avg_pool_3
     input = output0;
     static const pooling2d_layer_t avg_pool_3_data = { 2, 2 };
-    avg_pooling2d_layer(avg_pool_3_data, input, &output0);
+    average_pooling2d_layer(avg_pool_3_data, input, &output0);
     // Debug function for layer avg_pool_3
     print_data3d_t("avg_pool_3", output0);
     

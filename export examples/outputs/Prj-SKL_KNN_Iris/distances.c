@@ -86,7 +86,7 @@ fixed chebyshev_distance(fixed *x, fixed *y, int length) {
  *  result - value of the Minkowski distance between vectors x and y
  */
 fixed minkowski_distance(fixed *x, fixed *y, int length, fixed p) {
-    fixed distance = FIX_ZERO, diff;
+    dfixed distance = FIX_ZERO, diff;
     int i;
 
     for (i = 0; i < length; i++) {
@@ -109,31 +109,50 @@ fixed minkowski_distance(fixed *x, fixed *y, int length, fixed p) {
  *           0: identical direction, 1: orthogonal, 2: opposite direction
  */
 fixed cosine_distance(fixed *x, fixed *y, int length) {
-    fixed dot_product = FIX_ZERO;
-    fixed norm_x = FIX_ZERO;
-    fixed norm_y = FIX_ZERO;
+    dfixed dot_product = FIX_ZERO;
+    dfixed norm_x = FIX_ZERO;
+    dfixed norm_y = FIX_ZERO;
+    dfixed xx, yy;
     int i;
 
     for (i = 0; i < length; i++) {
-        dot_product += FIXED_MUL(x[i], y[i]);
-        norm_x += FIXED_MUL(x[i], x[i]);
-        norm_y += FIXED_MUL(y[i], y[i]);
+        xx = FIXED_TO_DFIXED(x[i]);
+        yy = FIXED_TO_DFIXED(y[i]);
+        dot_product += DFIXED_MUL(xx, yy);
+        norm_x += DFIXED_MUL(xx, xx);
+        norm_y += DFIXED_MUL(yy, yy);
     }
 
+    // Evitar división por cero
     if (norm_x == FIX_ZERO || norm_y == FIX_ZERO) {
-        return FIX_ONE; // Arbitrary choice for zero vectors
+        return FIX_ONE;
     }
 
-    // Convert from similarity (1 = identical) to distance (0 = identical)
-    fixed similarity = FIXED_DIV(dot_product,FIXED_MUL(fixed_sqrt(norm_x), fixed_sqrt(norm_y) ) );
+    // Se convierte la norma al mismo formato y se ajusta la escala
+    fixed sqrt_norm_x = fixed_sqrt(DFIXED_TO_FIXED(norm_x));
+    fixed sqrt_norm_y = fixed_sqrt(DFIXED_TO_FIXED(norm_y));
 
-    // Clamp similarity to [-1, 1] to handle numerical errors
+    // Evitar división por cero después de la raíz cuadrada
+    if (sqrt_norm_x == FIX_ZERO || sqrt_norm_y == FIX_ZERO) {
+        return FIX_ONE;
+    }
+
+    // Usar DFIXED_DIV para mayor precisión en la división
+    dfixed denominator = FIXED_TO_DFIXED(FIXED_MUL(sqrt_norm_x, sqrt_norm_y));
+
+    if (denominator == FIX_ZERO) {
+        return FIX_ONE;
+    }
+
+    fixed similarity = DFIXED_TO_FIXED(DFIXED_DIV(dot_product, denominator));
+
+    // Clamping para evitar valores fuera de rango debido a errores numéricos
     if (similarity > FIX_ONE) similarity = FIX_ONE;
     if (similarity < -FIX_ONE) similarity = -FIX_ONE;
 
-    // Convert to distance: d = 1 - similarity
     return FIX_ONE - similarity;
 }
+
 
 /*
  * braycurtis_distance()
@@ -180,14 +199,14 @@ fixed braycurtis_distance(fixed *x, fixed *y, int length) {
  *  result - value of the Canberra distance between vectors x and y
  */
 fixed canberra_distance(fixed *x, fixed *y, int length) {
-    fixed distance = 0;
+    fixed denom, distance = 0;
     int i;
 
     for (i = 0; i < length; i++) {
-        fixed denom = FIXED_ABS(x[i]) + FIXED_ABS(y[i]); // Denominador
+        denom = FIXED_ABS(x[i]) + FIXED_ABS(y[i]); // Denominador
         if (denom != 0) {
             fixed diff = FIXED_ABS(x[i] - y[i]); // Diferencia absoluta
-            distance += FIXED_DIV(diff, denom);  // Sumar la fracción
+            distance += DFIXED_DIV(diff, denom);  // Sumar la fracción
         }
     }
 

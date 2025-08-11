@@ -22,6 +22,28 @@ class Flatten(NeuralNetLayer):
         # define C data types of input/output data. Note that the data type of
         # the input depends on the dimensions of the input.
         #self._input_data_type = f'data{dims}d_t'
+
+    def calculate_ACOPS(self):
+        """
+        Calculates non-MACC operations for a Flatten layer:
+        - Memory reorganization operations (shape change)
+        - Memory access operations (read/write)
+
+        Returns
+        -------
+        int
+            Total count of non-MACC operations (ACOPS)
+        """
+
+        # Flatten typically requires 1 read and 1 write per element
+        # Some architectures may optimize this to 0 ops (just pointer change)
+        reorganization_ops = 0  # Conservative estimate (0 ops for modern frameworks)
+
+        # 2. Memory access ops: minimum 1 read + 1 write per element
+        memory_ops = 2 * self.output_size
+
+        return reorganization_ops + memory_ops
+
     def invoke(self, input_name, output_name):
         """
         Generates C code for the invocation of the EmbedIA function that

@@ -1,8 +1,8 @@
 class ModelDataType:
-    (FLOAT, FIXED32, FIXED16, FIXED8, QUANT8, BINARY, BINARY_FIXED32, BINARY_FLOAT16) = (0, 1, 2, 3, 4, 5, 6, 7)
+    (FLOAT, FIXED32, FIXED16, FIXED8, QUANT8, FULL_QUANT8, BINARY, BINARY_FIXED32, BINARY_FLOAT16) = (0, 1, 2, 3, 4, 5, 6, 7, 8)
 
-    SIZES = [32, 32, 16, 8, 8, 32, 32, 16]
-    NAMES = ['float', 'fixed32', 'fixed16', 'fixed8', 'quant8', 'binary', 'binary_fixed32', 'binary_fixed16']
+    SIZES = [32, 32, 16, 8, 8, 8, 32, 32, 16]
+    NAMES = ['float', 'fixed32', 'fixed16', 'fixed8', 'quant8', 'full_quant8', 'binary', 'binary_fixed32', 'binary_fixed16']
     def get_size(dt):
         return ModelDataType.SIZES[dt]
 
@@ -43,7 +43,7 @@ class ProjectOptions:
         self.files = ProjectFiles.ALL        # set of files to export library, main or model
         self.debug_mode = DebugMode.DISABLED # debug info to include and what to show
         self.clean_output = False            # clear output folder before export (use carefully)
-        self.normalizer = None               # normalization object to add before start inference
+        self.preprocessing = None            # preprocessing objects to add before start inference
         self.tamano_bloque = BinaryBlockSize.Bits8 # block size for binary nets
         self.on_unimplemented_layer = UnimplementedLayerAction.IGNORE_KNOWN # error action when find an unimplemented layer
         self.output_subfolder = 'embedia'    # name of folder to store all embedia files

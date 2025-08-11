@@ -67,24 +67,18 @@ typedef struct{
     size2d_t strides;
 }separable_conv2d_layer_t;
 
-/*
- * Structure that models a neuron.
- * Specifies the weights of the neuron as a vector (fixed * weights) and the bias (fixed bias).
- */
-typedef struct{
-    const fixed  * weights;
-    fixed  bias;
-}neuron_t;
+
 
 /*
  * Structure that models a dense layer.
- * Specifies the number of neurons (uint16_t n_neurons) and a vector of neurons (neuron_t * neurons).
+ * Specifies the number of neurons  and a vector of neurons.
  */
-typedef struct{
-    uint16_t n_neurons;
-    neuron_t * neurons;
-}dense_layer_t;
-
+typedef struct {
+    uint16_t input_size;
+    uint16_t output_size;
+    fixed *weights;     // Matriz weights[input_size][output_size]
+    fixed *biases;      // Vector biases[output_size]
+} dense_layer_t;
 
 /*
  * Pooling Structure
@@ -221,7 +215,7 @@ void depthwise_conv2d_layer(depthwise_conv2d_layer_t layer, data3d_t input, data
  *  - input       => structure data1d_t with the input data to process.
  *  - *output     => structure data1d_t to store the output result.
  */
-void dense_layer(dense_layer_t dense_layer, data1d_t input, data1d_t * output);
+void dense_layer(dense_layer_t* dense_layer, data1d_t* input, data1d_t * output);
 
 /*
  * max_pooling2d_layer()
@@ -235,14 +229,14 @@ void dense_layer(dense_layer_t dense_layer, data1d_t input, data1d_t * output);
 void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output);
 
 /*
- * avg_pooling_2d()
+ * average_pooling_2d()
  *   Function that applies an average pooling to an input with a window size of received
  *   by parameter (uint16_t strides)
  * Parameters:
  *  - input => input data of type data3d_t.
  *  - *output => pointer to the data3d_t structure where the result will be stored.
  */
-void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output);
+void average_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output);
 
 
 /*
@@ -263,6 +257,8 @@ void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
 void softmax_activation(fixed *data, uint32_t length);
 
 void relu_activation(fixed *data, uint32_t length);
+
+void relu6_activation(fixed *data, uint32_t length);
 
 void leakyrelu_activation(fixed *data, uint32_t length, fixed alpha);
 
@@ -330,48 +326,5 @@ void zero_padding2d_layer(uint8_t pad_h, uint8_t pad_w, data3d_t input, data3d_t
 */
 void channel_adapt_layer(data3d_t input, data3d_t * output);
 
-
-/* Signal processing */
-
-/* void fft(float data_re[], float data_im[], const unsigned int N)
- * Performs a Fast Fourier Transform (FFT) on the complex data passed as parameters.
- * Parameters:
- *  - data_re: Array containing the real part of the complex data.
- *  - data_im: Array containing the imaginary part of the complex data.
- *  - N: Amount of samples to perform the FFT over.
- */
-void fft(float data_re[], float data_im[],const unsigned int N);
-
-/*
- * void rearrange(float data_re[], float data_im[], const unsigned int N)   
- * Performs the necessary reordering of the data before applying the FFT.
- * Parameters:
- *  - data_re: Array containing the real part of the complex data.
- *  - data_im: Array containing the imaginary part of the complex data.
- *  - N: Amount of samples to perform the FFT over.
- */
-void rearrange(float data_re[],float data_im[],const unsigned int N);
-
-/*
- * void compute(float data_re[], float data_im[], const unsigned int N)
- * Contains the FFT calculation core, applying the Fourier transforms for 
- * each recursive step.
- * Parameters: 
- *  - data_re: Array containing the real part of the complex data.
- *  - data_im: Array containing the imaginary part of the complex data.
- *  - N: Amount of samples to perform the FFT over.
- */
-void compute(float data_re[],float data_im[],const unsigned int N);
-
-/*
- * void create_spectrogram(spectrogram_layer_t config, data1d_t input, data3d_t *output)
- * Generates the spectrogram from the input signal by applying FFTs
- * and further processing.
- * Parameters:
- *  - config: Spectrogram layer configuration
- *  - input:  1D input signal
- *  - output: 3D output spectrogram (W = n_mels, H = b_blocks, Ch = 1)
- */
-void create_spectrogram(spectrogram_layer_t config, data1d_t input, data3d_t * output);
 
 #endif

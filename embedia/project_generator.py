@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from embedia.core.model_factory import ModelFactory
+from embedia.core.model_factory import ModelFactory, DummyModel
 from embedia.model_generator.project_options import (
         ModelDataType,
         ProjectType,
@@ -69,6 +69,9 @@ class ProjectGenerator:
 
     def create_project(self, output_folder, project_name, model, options):
 
+        if model is None:
+            model = DummyModel('No Model')
+
         embedia_model = ModelFactory.create_model(model, options)
 
         embedia_layers = embedia_model.embedia_layers
@@ -130,6 +133,8 @@ class ProjectGenerator:
             return 'fixed32/'
         elif data_type == ModelDataType.QUANT8:
             return 'quant8/'
+        elif data_type == ModelDataType.FULL_QUANT8:
+            return 'full_quant8/'
         elif data_type == ModelDataType.BINARY:
             return 'binary/'
         elif data_type == ModelDataType.BINARY_FIXED32:
@@ -185,9 +190,13 @@ class ProjectGenerator:
         #half file
         if options.data_type == ModelDataType.BINARY_FLOAT16:
             project_files.append('half'+hpp_ext)
-        elif options.data_type == ModelDataType.QUANT8:
+        elif options.data_type in [ModelDataType.QUANT8, ModelDataType.FULL_QUANT8]:
             project_files.append('quant8' + c_ext)
             project_files.append('quant8' + h_ext)
+            if  options.data_type == ModelDataType.FULL_QUANT8:
+                # fixed point files for support quantization operations
+                project_files.append('fixed' + c_ext)
+                project_files.append('fixed' + h_ext)
         elif options.data_type != ModelDataType.FLOAT and options.data_type != ModelDataType.BINARY and options.data_type != ModelDataType.BINARY_FLOAT16:
             # fixed point files
             project_files.append('fixed'+c_ext)
@@ -195,8 +204,9 @@ class ProjectGenerator:
 
         # debug file
         if options.debug_mode != DebugMode.DISCARD:
-            project_files.append('embedia_debug'+c_ext)
-            project_files.append('embedia_debug'+h_ext)
+            debug_fname = 'embedia_debug' if options.data_type != ModelDataType.FULL_QUANT8 else 'embedia_debug_quant'
+            project_files.append(f'{debug_fname}'+c_ext)
+            project_files.append(f'{debug_fname}'+h_ext)
             project_files.append('embedia_debug_def'+h_ext)
 
         # test examples
@@ -210,24 +220,28 @@ class ProjectGenerator:
         total_params = (0, 0)
         total_size = 0
         total_MACs = 0
+        total_ACOPs= 0
 
-        for i, (l_name, l_type, params, shape, MACs, size) in enumerate(layers_info):
+        for i, (l_name, l_type, params, shape, MACs, ACOPs, size) in enumerate(layers_info):
             total_size += size
             total_MACs += MACs
+            total_ACOPs+= ACOPs
+
             total_params = (total_params[0] + params[0], total_params[1] + params[1])
             size = '%8.3f' % (size/1024.0)
             param_str= '%d' % (params[0] + params[1])
             if params[1] > 0:
                 param_str += '(%d)' % params[1]
             layer = l_type
-            layers_info[i] = (layer, l_name, param_str, shape, MACs, size)
+            layers_info[i] = (layer, l_name, param_str, shape, MACs, ACOPs, size)
         # print table
         table = PrettyTable()
-        table.field_names = ['EmbedIA Layer', 'Name', '#Param(NT)', 'Shape', 'MACs', 'Size (KiB)']
+        table.field_names = ['EmbedIA Layer', 'Name', '#Param(NT)', 'Shape', 'MACs', 'ACOPs', 'Size (KiB)']
         table.align['EmbedIA Layer'] = 'l'
         table.align['Name'] = 'l'
         table.align['#Param(NT)'] = 'r'
         table.align['MACs'] = 'r'
+        table.align['ACOPs'] = 'r'
         table.align['Size (KB)'] = 'r'
         table.align['#Param'] = 'r'
 #         table.add_rows(layers_info)
@@ -241,5 +255,5 @@ class ProjectGenerator:
         model_info += 'Total params (NT)....: %s\n' % total_p
         model_info += 'Total size in KiB....: %.3f\n' % (total_size/1024.0)
         model_info += 'Total MACs operations: %.0f\n' % total_MACs
-
+        model_info += 'Total AC operations..: %.0f\n' % total_ACOPs
         return model_info

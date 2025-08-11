@@ -586,7 +586,7 @@ void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
  *                data_t input  =>  datos de entrada de tipo data_t
  *             data_t * output  =>  puntero a la estructura data_t donde se guardará el resultado
  */
-void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output){
+void average_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output){
 	uint32_t c,i,j,aux1,aux2;
 	dfixed cant = INT_TO_FIXED(pool.size*pool.size);
 	dfixed avg = 0;

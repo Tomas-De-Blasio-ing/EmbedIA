@@ -1,6 +1,7 @@
+import warnings
 from tensorflow import keras
-from sklearn import preprocessing, neighbors
-from embedia.utils import melspec
+from sklearn import preprocessing, neighbors, svm, tree
+from embedia.native.signals.transforms import stft
 
 from embedia.core.dummy_layer import DummyLayer
 from embedia.layers.convolution.separable_conv2d import SeparableConv2D
@@ -20,6 +21,10 @@ from embedia.layers.signal_processing.spectrogram import Spectrogram
 from embedia.layers.normalization.standard_scaler import Normalization
 from embedia.layers.knn.k_neighbors_classifier import KNeighborsClassifier
 from embedia.layers.knn.k_neighbors_regressor import KNeighborsRegressor
+from embedia.layers.svm.svm_classfier import SvmClassifier
+from embedia.layers.svm.svm_linear_classfier import SvmLinearClassifier
+from embedia.layers.decision_tree.decision_tree_classifier import DecisionTreeClasifier
+from embedia.layers.signal_processing.stft import STFT
 
 from embedia.wrappers.tensorflow_wrappers import (
     TensorflowWrapper,
@@ -37,7 +42,10 @@ from embedia.wrappers.sklearn_wrappers import (
     SKLMinMaxScalerWrapper,
     SKLStandardScalerWrapper,
     SKLRobustScalerWrapper,
-    SKLKnnWrapper
+    SKLKnnWrapper,
+    SKLSvmWrapper,
+    SKLSvmLinearWrapper,
+    SKLDecisionTreeClassifierWrapper
 )
 
 from embedia.wrappers.larq_wrappers import (
@@ -93,13 +101,16 @@ dict_layers = {
     preprocessing.MaxAbsScaler: (Normalization, SKLMaxAbsScalerWrapper),
     preprocessing.RobustScaler: (Normalization, SKLRobustScalerWrapper),
     # signal processing
-    melspec.Melspec: (Spectrogram, EmbediaSpectrumWrapper),
+    stft.STFT: (STFT, EmbediaSpectrumWrapper),
     # KNN
     neighbors.KNeighborsClassifier: (KNeighborsClassifier, SKLKnnWrapper),
     neighbors.KNeighborsRegressor: (KNeighborsRegressor, SKLKnnWrapper),
+    # SVM
+    svm.SVC: (SvmClassifier, SKLSvmWrapper),
+    svm.LinearSVC: (SvmLinearClassifier, SKLSvmLinearWrapper),
+    # DTC
+    tree.DecisionTreeClassifier: (DecisionTreeClasifier, SKLDecisionTreeClassifierWrapper)
 }
-
-
 
 # register larq related layers only if larq module is installed
 try:
@@ -116,6 +127,4 @@ try:
 
     })
 except:
-    import warnings
     warnings.warn("Warning: 'larq' is missing. Certain features requiring binary neural networks may not work.", UserWarning)
-

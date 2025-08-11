@@ -194,7 +194,7 @@ void depthwise_conv2d_layer(depthwise_conv2d_layer_t layer, data3d_t input, data
  *  - input       => structure data1d_t with the input data to process.
  *  - *output     => structure data1d_t to store the output result.
  */
-void dense_layer(dense_layer_t dense_layer, data1d_t input, data1d_t * output);
+void dense_layer(dense_layer_t * dense_layer, data1d_t * input, data1d_t * output);
 
 /*
  * max_pooling2d_layer()
@@ -208,14 +208,14 @@ void dense_layer(dense_layer_t dense_layer, data1d_t input, data1d_t * output);
 void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output);
 
 /*
- * avg_pooling_2d()
+ * average_pooling_2d()
  *   Function that applies an average pooling to an input with a window size of received
  *   by parameter (uint16_t strides)
  * Parameters:
  *  - input => input data of type data3d_t.
  *  - *output => pointer to the data3d_t structure where the result will be stored.
  */
-void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output);
+void average_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output);
 
 
 /*
@@ -236,6 +236,8 @@ void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
 void softmax_activation(float *data, uint32_t length);
 
 void relu_activation(float *data, uint32_t length);
+
+void relu6_activation(float *data, uint32_t length);
 
 void leakyrelu_activation(float *data, uint32_t length, float alpha);
 

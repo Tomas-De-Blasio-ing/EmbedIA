@@ -5,7 +5,8 @@ Created on Sat Sep  3 00:45:28 2022
 @author: cesar
 """
 
-from tensorflow.keras import backend as K
+import tensorflow.keras.backend as K
+from tensorflow.keras.models import Model
 import numpy as np
 
 
@@ -69,10 +70,23 @@ class ModelInspector(object):
 
         inp_data = self._prepare_inp_data(inp_data)
 
+        # Construir el modelo si no está construido aún
+        if not self._model.built:
+            input_shape = (None,) + inp_data.shape[1:]
+            self._model.build(input_shape)
+
         layers_outputs = []
         for layerIndex, layer in enumerate(self._model.layers):
-            func = K.function([self._model.get_layer(index=0).input], layer.output)
-            layers_outputs.append((layer, func([inp_data])))
+            try:
+                # Intentar metodo moderno
+                submodel = Model(inputs=self._model.inputs, outputs=layer.output)
+                output = submodel.predict(inp_data)
+            except Exception:
+                # Fallback para versiones antiguas con K.function
+                func = K.function([self._model.get_layer(index=0).input], layer.output)
+                output = func([inp_data])
+
+            layers_outputs.append((layer, output))
 
         return layers_outputs
 
@@ -380,7 +394,7 @@ class ModelInspector(object):
         output = ''
 
         for layer, layer_output in layers_outputs:
-            dims = [str(d) for d in layer.output_shape if d is not None]
+            dims = [str(d) for d in layer.output.shape if d is not None]
             if len(dims) == 1:
                 dims.insert(0, '1')
             layer_type = type(layer).__name__

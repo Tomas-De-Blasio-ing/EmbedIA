@@ -1,5 +1,24 @@
 
 from abc import abstractmethod
+from enum import Enum
+
+
+class OutputPredictionType(Enum):
+    """Defines how model outputs should be processed for final prediction. This classification determines
+    the post-processing steps required to transform raw model outputs into meaningful predictions. The type
+    is automatically inferred from the model's last layer configuration.
+    Values:
+        DIRECT_CLASS_ID (0): Model directly outputs class indices (e.g., sklearn trees). No argmax or threshold needed.
+        CLASS_PROBABILITIES (1): Model outputs probability distributions (e.g., softmax). Requires argmax for class prediction
+        BINARY_OUTPUT (2): Single floating-point output (e.g., sigmoid). Requires threshold comparison (default: 0.5).
+        REGRESSION_OUTPUT (3): Continuous output values (single or multiple). No processing needed.
+    """
+    DIRECT_CLASS_ID = 0     # Model returns class index directly (no processing)
+    CLASS_PROBABILITIES = 1 # Model returns probabilities (needs argmax)
+    BINARY_OUTPUT = 2       # Single float output (needs threshold)
+    REGRESSION_OUTPUT = 3   # Single or multiple regression values
+
+
 
 class LayerWrapper:
 
@@ -26,5 +45,9 @@ class LayerWrapper:
 
     @property
     def output_shape(self):
+        return None
+
+    @property
+    def output_prediction_type(self):
         return None
 

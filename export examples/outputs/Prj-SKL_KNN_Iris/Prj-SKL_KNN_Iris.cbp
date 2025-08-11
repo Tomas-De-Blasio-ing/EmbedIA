@@ -39,6 +39,10 @@
             <Option compilerVar="CC" />
         </Unit>
         <Unit filename="fixed.h" />
+        <Unit filename="distances.c">
+            <Option compilerVar="CC" />
+        </Unit>
+        <Unit filename="distances.h" />
         <Unit filename="knn.c">
             <Option compilerVar="CC" />
         </Unit>
@@ -47,10 +51,6 @@
             <Option compilerVar="CC" />
         </Unit>
         <Unit filename="common.h" />
-        <Unit filename="distances.c">
-            <Option compilerVar="CC" />
-        </Unit>
-        <Unit filename="distances.h" />
         <Unit filename="neural_net.c">
             <Option compilerVar="CC" />
         </Unit>

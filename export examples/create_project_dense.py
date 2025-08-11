@@ -8,7 +8,7 @@ from embedia.model_generator.project_options import (
     ProjectOptions,
     ProjectType
 )
-
+from tensorflow.keras import layers
 import joblib as jl
 import numpy as np
 
@@ -21,7 +21,7 @@ MODEL_FILE    = 'models/rain_predictor_model_with_activ_layer.h5'
 scaler = jl.load('scalers/rain_predictor_std_scaler.sav')
 
 
-model = load_model(MODEL_FILE)
+model = load_model(MODEL_FILE, custom_objects={"ReLU": layers.ReLU()})
 
 model._name = "rain_predictor"
 
@@ -37,11 +37,13 @@ options.embedia_folder = '../embedia/'
 options.project_type = ProjectType.CODEBLOCK
 # options.project_type = ProjectType.CPP
 
-# options.data_type = ModelDataType.FLOAT
-options.data_type = ModelDataType.QUANT8
+#options.data_type = ModelDataType.ESP32_SIMD_FLOAT
+#options.data_type = ModelDataType.FLOAT
+options.data_type = ModelDataType.FULL_QUANT8 # revisar sigmoid activation y demas
 # options.data_type = ModelDataType.FIXED32
-# options.data_type = ModelDataType.FIXED16
+#options.data_type = ModelDataType.FIXED16
 # options.data_type = ModelDataType.FIXED8
+# options.data_type = ModelDataType.QUANT8
 
 # options.debug_mode = DebugMode.DISCARD
 # options.debug_mode = DebugMode.DISABLED
@@ -49,7 +51,7 @@ options.data_type = ModelDataType.QUANT8
 options.debug_mode = DebugMode.DATA
 
 # Normalizer not included in the model
-options.normalizer = scaler
+options.preprocessing = scaler
 
 # meantempm,meandewptm,meanpressurem,maxhumidity,minhumidity,maxtempm,mintempm,maxdewptm,mindewptm,maxpressurem,minpressurem,date_sin,date_cos,rained
 # date_sin = cos(2 * pi * day_of_year(date) / 365.25)

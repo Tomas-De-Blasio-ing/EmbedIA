@@ -3,6 +3,11 @@ from embedia.core.embedia_model import EmbediaModel
 from embedia.models.tensorflow_model import TensorflowModel
 from embedia.models.sklearn_model import  SklearnModel
 
+class DummyModel(object):
+    def __init__(self, name):
+        self.name = name
+        self.layers = []
+
 
 class ModelFactory:
     """
@@ -26,6 +31,9 @@ class ModelFactory:
         Raises:
             ValueError: If the provided model_object is not in the TensorFlow or scikit-learn module.
         """
+
+        if isinstance(model_object, DummyModel):
+            return EmbediaModel(model_object, options)
 
         main_module = inspect.getmodule(model_object).__name__.split('.')[0]
         if main_module in ['tensorflow', 'keras']:

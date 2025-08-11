@@ -148,8 +148,8 @@ options.example_ids = ids
 # with open("melspec.pickle", "rb") as f:
 #     options.normalizer = pickle.load(f)
 
-options.normalizer = melspec
-options.normalizer.report()
+options.preprocessing = melspec
+options.preprocessing.report()
 
 ############# Generate project #############
 

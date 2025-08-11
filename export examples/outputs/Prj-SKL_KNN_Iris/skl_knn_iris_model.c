@@ -1,9 +1,9 @@
-#include "embedia_debug.h"
-#include "distances.h"
-#include "neural_net.h"
-#include "knn.h"
-#include "common.h"
 #include "skl_knn_iris_model.h"
+#include "distances.h"
+#include "common.h"
+#include "knn.h"
+#include "neural_net.h"
+#include "embedia_debug.h"
 
 // Initialization function prototypes
 normalization_layer_t init_Standard_Scaler_data(void);
@@ -22,35 +22,35 @@ void model_init(){
 }
 
 void model_predict(data1d_t input, data1d_t * output){
-  
+
     prepare_buffers();
-    
+
     //******************** LAYER 0 *******************//
     // Layer name: Standard_Scaler
     data1d_t output0;
     standard_norm_layer(Standard_Scaler_data, input, &output0);
     // Debug function for layer Standard_Scaler
     print_data1d_t("Standard_Scaler", output0);
-    
+
     //******************** LAYER 1 *******************//
     // Layer name: SKL_KNN_iris_model
     input = output0;
     k_neighbors_classifier_layer(SKL_KNN_iris_model_data, input, &output0);
-    
+
     // Debug function for layer SKL_KNN_iris_model
     print_data1d_t("SKL_KNN_iris_model", output0);
-    
+
 
     *output = output0;
 
 }
 
 int model_predict_class(data1d_t input, data1d_t * results){
-  
-   
+
+
     model_predict(input, results);
-    
-    return argmax(*results);
+
+    return argmax(results->data);
     //return argmax(data1d_t);
 
 }
@@ -72,15 +72,15 @@ normalization_layer_t init_Standard_Scaler_data(void){
     return norm;
 }
 
-        
+
     k_neighbors_classifier_layer_t init_SKL_KNN_iris_model_data(void){
-    
+
         uint16_t n_neighbors = 5;
         uint32_t n_samples = 120;
         uint16_t n_features = 4;
         uint16_t n_classes = 3;
 
-    
+
         static fixed neighbors_features[] = {
 /* 0 */ -377, 308, -400, -336,
 /* 0 */ -34, 766, -327, -268,
@@ -204,8 +204,8 @@ normalization_layer_t init_Standard_Scaler_data(void){
 /* 2 */ 403, -35, 319, 313,
 };
         static uint16_t neighbors_id[] = {0,0,1,0,0,2,1,0,0,0,2,1,1,0,0,1,2,2,1,2,1,2,1,0,2,1,0,0,0,1,2,0,0,0,1,0,1,2,0,1,2,0,2,2,1,1,2,1,0,1,2,0,0,1,1,0,2,0,0,1,1,2,1,2,2,1,0,0,2,2,0,0,0,1,2,0,2,2,0,1,1,2,1,2,0,2,1,2,1,1,1,0,1,1,0,1,2,2,0,1,2,2,0,2,0,1,2,2,1,2,1,1,2,2,0,1,2,0,1,2};
-    
-        k_neighbors_classifier_layer_t layer= { n_neighbors, n_samples, n_features, n_classes, neighbors_features, neighbors_id, euclidean_distance };
+
+        k_neighbors_classifier_layer_t layer= { n_neighbors, n_samples, n_features, n_classes, neighbors_features, neighbors_id , euclidean_distance };
         return layer;
     }
-    
+

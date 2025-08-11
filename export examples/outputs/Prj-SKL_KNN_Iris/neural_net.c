@@ -447,7 +447,7 @@ void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
 
 
 /*
- * avg_pooling_2d()
+ * average_pooling_2d()
  *  Function that applies an average pooling to an input with a window size of received
  *  by parameter (uint16_t strides)
  * Parameters:
@@ -455,7 +455,7 @@ void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
  *  *output => pointer to the data3d_t structure where the result will be stored.
  */
 
-void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output){
+void average_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output){
     uint32_t c,i,j,aux1,aux2;
     dfixed cant = INT_TO_FIXED(pool.size*pool.size);
     dfixed avg = 0;

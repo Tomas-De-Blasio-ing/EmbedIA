@@ -10,6 +10,7 @@ from embedia.utils import file_management
 from embedia.model_generator.project_options import BinaryBlockSize
 from embedia.core.unimplemented_layer import UnimplementedLayer
 from embedia.core.dummy_layer import DummyLayer
+from embedia.core.embedia_model import OutputPredictionType
 
 def multi_replace(adict, text):
     # Create a regular expression from all of the dictionary keys
@@ -124,10 +125,14 @@ def generate_embedia_model(model, src_folder, dst_folder, ext_h, ext_c, model_na
 
     src_h = os.path.join(src_folder, 'model/model.h')
     src_c = os.path.join(src_folder, 'model/model.c')
+    full_quant = options.data_type == ModelDataType.FULL_QUANT8
 
     include_files = set([model_filename])
     if options.debug_mode != DebugMode.DISCARD:
-        include_files.add('embedia_debug')
+        if full_quant:
+            include_files.add('embedia_debug_quant')
+        else:
+            include_files.add('embedia_debug')
 
     model_name_h = f'_{model_filename.upper()}_H'
     # macros_first_shape = embedia_layers[0].get_macros_first_shape()
@@ -207,7 +212,7 @@ def generate_embedia_model(model, src_folder, dst_folder, ext_h, ext_c, model_na
 
                 # Add debug function if is enabled
                 if options.debug_mode != DebugMode.DISCARD:
-                    dbg_fn = layer.debug_function(var_output)
+                    dbg_fn = layer.debug_function(var_output, full_quant=full_quant)
                     predict_fn += f'// Debug function for layer {layer.name}\n'
                     predict_fn += f'{dbg_fn}\n'
             else:
@@ -217,12 +222,15 @@ def generate_embedia_model(model, src_folder, dst_folder, ext_h, ext_c, model_na
     # indent code
     predict_fn = indent(predict_fn)
     # improve code in order to include the correct model funcion
+    predict_class = ''
     if output_data_type == 'data1d_t':
-        n_classes = model.identify_target_classes()  # determine model classes, 0=regression, 1=binary, >1=multiclass
-        if n_classes == 1:
+        output_pred_type = model.output_prediction_type
+        if output_pred_type == OutputPredictionType.BINARY_OUTPUT:
             predict_class = 'return results->data[0] >= 0.5;'
-        else:
+        elif output_pred_type == OutputPredictionType.CLASS_PROBABILITIES:
             predict_class = 'return argmax(*results);'
+        elif output_pred_type == OutputPredictionType.DIRECT_CLASS_ID:
+            predict_class = 'return results->data[0];'
     else:
         predict_class = '''//TO DO: argmax with data2d_t and data3d_t
     return -1; '''
@@ -288,8 +296,6 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
         filename = os.path.join(dst_embedia_folder, 'example_file.h')
         includes_c += f'#include "{filename}"\n'
         main_code += f'''
-    // sample intitialization
-    input.data = {example_var_name};
 '''
 
     main_code += '''
@@ -305,7 +311,7 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
 
     if options.data_type == ModelDataType.FLOAT or options.data_type == ModelDataType.BINARY:
         model_data_type = 'float'
-    elif options.data_type == ModelDataType.QUANT8:
+    elif options.data_type in [ModelDataType.QUANT8, ModelDataType.FULL_QUANT8]:
         model_data_type = 'quant8'
     else:
         model_data_type = 'fixed'
@@ -315,7 +321,11 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
     for k in input_const:
         input_dim += f'{k}, '
 
-    input_data = f'''{input_data_type} input = {{ {input_dim} NULL}};\n'''
+    if options.data_type == ModelDataType.FULL_QUANT8:
+        qparam = ', sample_data_qp'
+    else:
+        qparam = ''
+    input_data = f'''{input_data_type} input = {{ {input_dim} NULL {qparam} }};\n'''
     output_data = f'''{output_data_type} results;\n'''
 
     main_code += '''
@@ -323,7 +333,7 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
     // make model prediction
     // uncomment corresponding code
 
-    int prediction = model_predict_class(input, &results);
+    // int prediction = model_predict_class(input, &results);
 
     // print predicted class id'''
 
@@ -338,12 +348,30 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
     Serial.println(sample_data_id);
 '''
     else:
-        main_code += '''
-    printf("Prediction class id: %d\\n", prediction);
+        if options.example_data is not None:
+            main_code += '''
+    int i, ok=0, prediction;
+    printf("example_file.h tests\\n");
+    printf(" Error | Cls | Pred \\n");
+    printf("-------|-----|------\\n");
+
+    for (i=0; i<TEST_SAMPLES; i++) {
+        input.data = sample_data[i];
+        prediction = model_predict_class(input, &results);
+
+        if (prediction == sample_data_ids[i][0]) {
+            ok++;
+            printf("       |  %2d |  %2d  \\n", sample_data_ids[i][0], prediction);
+        }
+        else {
+            printf("   X   |  %2d |  %2d  \\n", sample_data_ids[i][0], prediction);
+        }
+    }
+    printf("\\n%d correct out of %d (Accuracy: %.2f%%)\\n", ok, TEST_SAMPLES, (100.0 * ok)/TEST_SAMPLES);
 '''
         if options.example_data is not None:
             main_code += '''
-    printf("   Example class id: %d\\n", sample_data_id);
+    //printf("   Example class id: %d\\n", sample_data_id);
 '''
 
     main_code += '''
@@ -374,23 +402,29 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
 
 def generate_embedia_debug(src_dbg_folder, dst_folder, options):
     # add debug mode macro to header file
-    content = file_management.read_from_file(os.path.join(src_dbg_folder, 'embedia_debug.h'))
+
+    if options.data_type == ModelDataType.FULL_QUANT8:
+        debug_filename = 'embedia_debug_quant'
+    else:
+        debug_filename = 'embedia_debug'
+
+    content = file_management.read_from_file(os.path.join(src_dbg_folder, f'{debug_filename}.h'))
     # add include
     content = content.format(EMBEDIA_DEBUG='#define EMBEDIA_DEBUG %d\n' % options.debug_mode)
-    file_management.save_to_file(os.path.join(dst_folder, 'embedia_debug.h'), ''.join(content))
+    file_management.save_to_file(os.path.join(dst_folder, f'{debug_filename}.h'), ''.join(content))
     # copy aditional debug file
     if options.project_type == ProjectType.ARDUINO:
         file_management.copy(os.path.join(src_dbg_folder, 'embedia_debug_def_arduino.h'),
                     os.path.join(dst_folder, 'embedia_debug_def.h'))
         # copy implementation file
-        file_management.copy(os.path.join(src_dbg_folder, 'embedia_debug.c'),
-                    os.path.join(dst_folder, 'embedia_debug.cpp'))
+        file_management.copy(os.path.join(src_dbg_folder, f'{debug_filename}.c'),
+                    os.path.join(dst_folder, f'{debug_filename}.cpp'))
     else:
         file_management.copy(os.path.join(src_dbg_folder, 'embedia_debug_def_c.h'),
                     os.path.join(dst_folder, 'embedia_debug_def.h'))
         # copy implementation file
-        file_management.copy(os.path.join(src_dbg_folder, 'embedia_debug.c'),
-                    os.path.join(dst_folder, 'embedia_debug.c'))
+        file_management.copy(os.path.join(src_dbg_folder, f'{debug_filename}.c'),
+                    os.path.join(dst_folder, f'{debug_filename}.c'))
 
 def generate_codeblock_project(project_name, files, src_folder, _dst_embedia_folder_name):
 
@@ -419,7 +453,9 @@ def generate_codeblock_project(project_name, files, src_folder, _dst_embedia_fol
     return content
 
 
-def data_to_array_str(data, macro_converter, clip=120):
+def data_to_array_str(data, macro_converter=None, clip=120):
+    if macro_converter is None:
+        macro_converter = lambda x:x
     output = ''
     cline = '  '
     for i in data.flatten():
@@ -447,12 +483,10 @@ def generate_examples(src_folder, var_name, options, embedia_model):
     #         return f"FL2FX({s})"
     #     data_type = 'fixed'
 
-    if embedia_model.is_data_quantized:
+    if embedia_model.is_data_quantized and options.data_type == ModelDataType.QUANT8:
         (data_type, data_converter) = embedia_model.get_type_converter(ModelDataType.FLOAT)
     else:
         (data_type, data_converter) = embedia_model.get_type_converter()
-
-    conv = lambda x: x
 
     src_h = os.path.join(src_folder, 'main/example_file.h')
     smp = options.example_data
@@ -460,29 +494,70 @@ def generate_examples(src_folder, var_name, options, embedia_model):
 
     if smp.shape[0] != ids.shape[0]:
         raise Exception("The number of examples does not match the number of classes")
-
-    examples = f'''
-#define MAX_SAMPLE {smp.shape[0]-1}
-
-#define SELECT_SAMPLE 0
-
-'''
     if not isinstance(smp, np.ndarray):
         smp = np.array(smp)
+    if not isinstance(ids, np.ndarray):
+        ids = np.array(ids)
+    if len(ids.shape) == 1:
+        ids = ids.reshape((-1,1))
+
+
+    # generate array of samples
+    data_samples = ''
+    data_converter.fit(smp)
+    if options.data_type == ModelDataType.FULL_QUANT8:
+        data_samples_quant =f'''
+const qparam_t {var_name}_qp = {{
+    (int32_t) ({data_converter.scale}*Q_SCALE), // Escala
+    {data_converter.zero_pt} // Punto cero
+}};'''
+    else:
+        data_samples_quant =''
+
     for i in range(len(smp)):
         data = smp[i].flatten()
-        new_data = data_converter.fit_transform(data)
+        #new_data = data_converter.fit_transform(data)
+        new_data = data_converter.transform(data)
+        #id = int(ids[i])
+        comma = ',' if i > 0 else ' '
+        data_samples += f'''#if (FST_TEST_SAMPLE <= {i}) && ({i} <= LST_TEST_SAMPLE)
+    #if (FST_TEST_SAMPLE != {i})
+    ,
+    #endif
+    {{ {data_to_array_str(new_data)} }}
+#endif
+'''
+    data_predict = ''
+    for i in range(len(ids)):
 
-        id = int(ids[i])
-        examples += f'''#if SELECT_SAMPLE == {i}
-        
-uint16_t {var_name}_id = {id};
+        # id = int(ids[i])
+        comma = ',' if i > 0 else ' '
+        data_predict += f'''#if (FST_TEST_SAMPLE <= {i}) && ({i} <= LST_TEST_SAMPLE)
+    #if (FST_TEST_SAMPLE != {i})
+    ,
+    #endif
+        {{ {data_to_array_str(ids[i])} }}
+#endif
+'''
+    smp_size = '*'.join(map(str, smp.shape[1:]))
+    examples = f'''
+// The sample array below may contain up to {smp.shape[0]-1} elements. Ensure the macros FST_TEST_SAMPLE and LST_TEST_SAMPLE are 
+// within the range [0, {smp.shape[0]-1}] and that FST_TEST_SAMPLE ≤ LST_TEST_SAMPLE.
+#define FST_TEST_SAMPLE 0
+#define LST_TEST_SAMPLE {smp.shape[0]-1}
+// number of examples to test in main file
+#define TEST_SAMPLES (LST_TEST_SAMPLE-FST_TEST_SAMPLE+1)
 
-static {data_type} {var_name}[]= {{
-{data_to_array_str(new_data, conv)}
+{data_samples_quant}
+
+static {data_type} {var_name}[][{smp_size}]= {{
+{data_samples}
 }};
 
-#endif
+static int {var_name}_ids[][{smp_size}]= {{
+{data_predict}
+}};
+
 '''
 
     content = file_management.read_from_file(src_h).format(examples=examples)

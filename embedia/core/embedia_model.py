@@ -2,12 +2,11 @@ from embedia.core.layers_implemented import dict_layers
 from collections import defaultdict
 from embedia.model_generator.project_options import ModelDataType
 import regex as re
-import pycparser as pcp
-from embedia.model_generator.project_options import BinaryBlockSize
 from embedia.core.unimplemented_layer import UnimplementedLayer
 from embedia.core.type_converters import *
 from embedia.core.exceptions import *
-
+from embedia.core.layer_wrapper import OutputPredictionType
+from enum import Enum
 
 class EmbediaModel(object):
     """
@@ -36,6 +35,7 @@ class EmbediaModel(object):
         self._options = options
         self._clear_names()
         self.model = obj_model
+        self._output_prediction_type = None
 
     @property
     def model(self):
@@ -69,34 +69,61 @@ class EmbediaModel(object):
             model_name += '_model'
         return model_name
 
-    def _get_data_type_file(self):
+    @property
+    def output_prediction_type(self):
+        if self._output_prediction_type is None:
+            self._output_prediction_type = self._infer_output_prediction_type()
+
+        return self._output_prediction_type
+
+    def _infer_output_prediction_type(self):
+        return OutputPredictionType.CLASS_PROBABILITIES
+
+    def _get_data_type_files(self):
         data_type = self.options.data_type
         if data_type == ModelDataType.FIXED8:
-            return  ('fixed.h', 'fixed.c')
+            return  [('fixed.h', 'fixed.c')]
         elif data_type == ModelDataType.FIXED16:
-            return  ('fixed.h', 'fixed.c')
+            return  [('fixed.h', 'fixed.c')]
         elif data_type == ModelDataType.FIXED32:
-            return  ('fixed.h', 'fixed.c')
+            return  [('fixed.h', 'fixed.c')]
         elif data_type == ModelDataType.QUANT8:
-            return ('quant8.h', 'quant8.c')
+            return [('quant8.h', 'quant8.c')]
+        elif data_type == ModelDataType.FULL_QUANT8:
+            return [('quant8.h', 'quant8.c'), ('fixed.h', 'fixed.c')]
         elif data_type == ModelDataType.BINARY:
             return None
         elif data_type == ModelDataType.BINARY_FIXED32:
-            return ('fixed.h', 'fixed.c')
+            return [('fixed.h', 'fixed.c')]
         elif data_type == ModelDataType.BINARY_FLOAT16:
-            return ('half.hpp', None)
+            return [('half.hpp', None)]
         return None
 
     @property
     def required_files(self):
         result = set()
-        dt_files = self._get_data_type_file()
+        dt_files = self._get_data_type_files()
         if dt_files is not None:
-            result.add(dt_files)
+            for dt_file in dt_files:
+                result.add(dt_file)
         for layer in self._embedia_layers:
             for files_tuple in layer.required_files:
                 result.add(files_tuple)
         return list(result)
+
+    def _add_processing_layers(self, objects):
+        if objects is None:
+            return
+
+        # Convertir a iterable (manejando diccionarios, strings y objetos no iterables)
+        if isinstance(objects, dict):
+            objects = objects.values()  # Usa la vista de valores (sin copiar)
+        elif not hasattr(objects, '__iter__'):
+            objects = [objects]  # Non iterable objects
+
+        for object in objects:
+            ly = self._create_embedia_layer(object)
+            self._embedia_layers.append(ly)
 
 
     def _create_embedia_layers(self, options_array=None):
@@ -105,11 +132,8 @@ class EmbediaModel(object):
 
         self._embedia_layers = []
 
-        # external normalizer to the model? => add as first layer
-        if self.options.normalizer is not None:
-            obj = self.options.normalizer
-            ly = self._create_embedia_layer(obj)
-            self._embedia_layers.append(ly)
+        # external preprocessing to the model? => add as first layer
+        self._add_processing_layers(self.options.preprocessing)
 
         for layer in self.model.layers:
             obj = layer
@@ -260,6 +284,8 @@ class EmbediaModel(object):
             return ('fixed', FixedTypeConverter(15, 17))  # should use Fixed32TypeConverter()?, test required
         elif data_type == ModelDataType.QUANT8:
             return ('quant8', QuantizedTypeConverter(8, False))
+        elif data_type == ModelDataType.FULL_QUANT8:
+            return ('quant8', QuantizedTypeConverter(8, symetric=False, signed=True))
         elif data_type == ModelDataType.FIXED32:
             return ('fixed', FixedTypeConverter(15, 17))
         elif data_type == ModelDataType.FIXED16:
@@ -269,29 +295,6 @@ class EmbediaModel(object):
         else:
             raise UnsupportedFeatureError(data_type, 'Data type converter not supported')
 
-    def identify_target_classes(self):
-        """
-        Identify the number of target classes based on the last layer of the model.
-
-        Returns:
-            int: 1 for binary classification, N for multiclass classification with N classes,
-                or 0 for regression.
-        """
-        wrapper = self.embedia_layers[-1].wrapper
-        act_fn = ''
-        if wrapper.activation is not None:
-            act_fn = wrapper.activation.__name__.lower()
-
-        if act_fn == '':
-            act_fn = wrapper.target.__class__.__name__.lower()
-
-        if act_fn in ['sigmoid', 'sigmoidal', 'softsign', 'tanh']:
-                return 1 # binary classification
-        if act_fn == 'softmax':
-            return wrapper.output_shape[-1] # multiclass classification
-
-        return 0 # regression
-
     @property
     def is_data_quantized(self):
         """
@@ -300,7 +303,7 @@ class EmbediaModel(object):
         Returns:
             bool: True if the data is quantized (ModelDataType.QUANT8), False otherwise.
         """
-        return self.options.data_type == ModelDataType.QUANT8
+        return self.options.data_type in [ModelDataType.QUANT8, ModelDataType.FULL_QUANT8]
 
     def get_type_initializer(self):
         """
@@ -360,9 +363,10 @@ class EmbediaModel(object):
             params = info.params
             shape = info.output_shape
             MACs = info.macs_ops
+            ACOPs= info.ac_ops
             size = info.memory
 
-            layers_info.append((l_name, l_type, params, shape, MACs, size))
+            layers_info.append((l_name, l_type, params, shape, MACs, ACOPs, size))
 
         return layers_info
 

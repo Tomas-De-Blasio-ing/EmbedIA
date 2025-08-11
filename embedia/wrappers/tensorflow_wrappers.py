@@ -7,11 +7,21 @@ class TensorflowWrapper(LayerWrapper):
 
     @property
     def input_shape(self):
-        return self._target.input_shape
+        if hasattr(self._target, "input"):
+            return self._target.input.shape
+        elif hasattr(self._target, "input_shape"):
+            return self._target.input_shape
+        else:
+            return None
 
     @property
     def output_shape(self):
-        return self._target.output_shape
+        if hasattr(self._target, "output"):
+            return self._target.output.shape
+        elif hasattr(self._target, "output_shape"):
+            return self._target.output_shape
+        else:
+            return None
 
     @property
     def name(self):
@@ -60,7 +70,13 @@ class TFPoolWrapper(TensorflowWrapper):
 
     @property
     def function_name(self):
-        return self._target.pool_function.__name__.lower()[0:3]
+        pool_fn = type(self._target).__name__.lower()
+        if "global" in pool_fn:
+            tipo = pool_fn.split("global")[1]
+            return "global_" + tipo.split("pooling")[0]
+        elif "pooling" in pool_fn:
+            return pool_fn.split("pooling")[0]
+        return None
 
 
 class TFPaddingWrapper(TensorflowWrapper):
@@ -77,14 +93,15 @@ class TFConv2DWrapper(TensorflowWrapper):
          Input fromat array: row, col, channel, filters
          Output format array: filters, channel, row, column
         '''
-        _row, _col, _chn, _filt = weights.shape
-        arr = np.zeros((_filt, _chn, _row, _col))
-        for row, elem in enumerate(weights):
-            for column, elem2 in enumerate(elem):
-                for channel, elem3 in enumerate(elem2):
-                    for filters, value in enumerate(elem3):
-                        arr[filters, channel, row, column] = value
-        return arr
+        # _row, _col, _chn, _filt = weights.shape
+        # arr = np.zeros((_filt, _chn, _row, _col))
+        # for row, elem in enumerate(weights):
+        #     for column, elem2 in enumerate(elem):
+        #         for channel, elem3 in enumerate(elem2):
+        #             for filters, value in enumerate(elem3):
+        #                 arr[filters, channel, row, column] = value
+        # return arr
+        return np.transpose(weights, (3, 2, 0, 1))
 
     @property
     def weights(self):
@@ -174,5 +191,9 @@ class TFActivationWrapper(TensorflowWrapper):
     @property
     def leakyrelu_alpha(self):
         if hasattr(self._target, 'activation'):
-            return self._target.activation.alpha  # target.activation is an object with alpha property
-        return self._target.alpha  # target is a keras.layers.LeakyReLU with alpha property
+            relu = self._target.activation
+        else:
+            relu = self._target
+        if hasattr(relu, 'negative_slope'):
+            return relu.negative_slope
+        return relu.alpha
