@@ -978,8 +978,11 @@ options.files = ProjectFiles.ALL
 options.clean_output = True
 
 if options.data_type == ModelDataType.BINARY:
-    import larq as lq
-    lq.models.summary(model)
+    try:
+      import larq as lq
+      lq.models.summary(model)
+    except:
+      pass
 else:
     model.summary()
 

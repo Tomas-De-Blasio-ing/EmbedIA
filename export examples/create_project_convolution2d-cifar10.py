@@ -74,7 +74,8 @@ generator.create_project(OUTPUT_FOLDER, PROJECT_NAME, model, options)
 print("Project", PROJECT_NAME, "exported in", OUTPUT_FOLDER)
 
 try:
-    import larq
-    larq.models.summary(model)
+    import larq as lq
+    lq.models.summary(model)
 except:
-    pass
+    model.summary()
+

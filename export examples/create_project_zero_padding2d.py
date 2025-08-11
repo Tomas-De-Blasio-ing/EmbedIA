@@ -70,9 +70,11 @@ generator.create_project(OUTPUT_FOLDER, PROJECT_NAME, model, options)
 
 print("Project", PROJECT_NAME, "exported in", OUTPUT_FOLDER)
 
-import larq
-
-larq.models.summary(model)
+try:
+    import larq as lq
+    lq.models.summary(model)
+except:
+    model.summary()
 
 inspector = ModelInspector(model)
 s_id = 0

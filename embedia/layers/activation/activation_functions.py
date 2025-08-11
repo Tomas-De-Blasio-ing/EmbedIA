@@ -10,7 +10,7 @@ class ActivationFunctions:
     def _base_params(self, output_name, output_size, qparams=''):
         if qparams != '':
             qparams = ', ' + qparams
-        return f'{output_name}{qparams}, {output_size}'
+        return f'{output_name}, {output_size}{qparams}'
 
     def _tanh_params(self, output_name, output_size, qparams=''):
         return self._base_params(output_name, output_size, qparams)
@@ -27,7 +27,12 @@ class ActivationFunctions:
     def _relu_params(self, output_name, output_size, qparams=''):
         return self._base_params(output_name, output_size, qparams)
 
+    def _relu6_params(self, output_name, output_size, qparams=''):
+        return self._base_params(output_name, output_size, qparams)
+
+    #def _leaky_params(self, output_name, output_size, qparams=''):
     def _leakyrelu_params(self, output_name, output_size, qparams=''):
+
         if self._model.is_data_quantized: # no make sense to use quantization, use float
             (data_type, data_converter) = self._model.get_type_converter(ModelDataType.FLOAT)
         else: # default data type converter

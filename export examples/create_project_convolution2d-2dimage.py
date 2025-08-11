@@ -48,7 +48,7 @@ options.debug_mode = DebugMode.DATA
 
 (samples, ids) = joblib.load(SAMPLES_FILE)
 
-res = model.predict(samples,,
+res = model.predict(samples)
 print( (res*100).astype('int') )
 
 
@@ -75,6 +75,9 @@ generator.create_project(OUTPUT_FOLDER, PROJECT_NAME, model, options)
 
 print("Project", PROJECT_NAME, "exported in", OUTPUT_FOLDER)
 
-import larq
+try:
+    import larq as lq
+    lq.models.summary(model)
+except:
+    model.summary()
 
-larq.models.summary(model)

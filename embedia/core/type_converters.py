@@ -98,22 +98,25 @@ class QuantizedTypeConverter(TypeConverter):
     symetric = True
     lower_percentile = 1
     upper_percentile = 99
+    signed = False  # Nuevo atributo para controlar signo
 
-    def __init__(self, bits, symetric=True):
-        self.set_bits(bits)
-        self._name = 'Quant%d%c' % (bits, ['A', 'S'][symetric])
+    def __init__(self, bits, symetric=True, signed=False):
+        self.set_bits(bits, signed)
+        self._name = 'Quant%d%c%s' % (bits, ['A', 'S'][symetric], ['', 'S'][signed])
         self.symetric = symetric
+        self.signed = signed
 
-    def set_bits(self, bits):
+    def set_bits(self, bits, signed=False):
         if bits == 8:
-            self.dtype = np.uint8
+            self.dtype = np.int8 if signed else np.uint8
         elif bits == 16:
-            self.dtype = np.uint16
+            self.dtype = np.int16 if signed else np.uint16
         else:
             raise ValueError("bits must be 8, 16")
         self.bits = bits
         self._size = bits / 8
-        self.max_qint = 2 ** self.bits - 1
+        self.max_qint = 2 ** (self.bits - 1) - 1 if signed else 2 ** self.bits - 1
+        self.min_qint = -2 ** (self.bits - 1) if signed else 0
 
     # def _remove_outliers(self, data):
     #     Q1 = np.percentile(data, 25)

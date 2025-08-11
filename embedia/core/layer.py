@@ -1,6 +1,7 @@
 import regex as re
 import numpy as np
 import tensorflow.keras.backend as K
+from embedia.utils.c_helper import CBuilder
 
 class LayerInfo(object):
     """
@@ -11,6 +12,7 @@ class LayerInfo(object):
     def __init__(self, embedia_layer, types_dict):
         self.set_layer(embedia_layer, types_dict)
 
+
     def set_layer(self, layer, types_dict):
         self.layer = layer
         self.types_dict = types_dict
@@ -20,7 +22,8 @@ class LayerInfo(object):
     def _update_properties(self):
         embedia_layer = self.layer
 
-        self.class_name = embedia_layer.__class__.__name__
+        self.class_name = embedia_layer.layer_type_name
+
         self.layer_name = embedia_layer.name
 
         self.output_shape = self.layer.output_shape
@@ -30,6 +33,8 @@ class LayerInfo(object):
         self.params = (trainable, non_trainable)
 
         self.macs_ops = self.layer.calculate_MAC()
+
+        self.ac_ops = self.layer.calculate_ACOPS()
 
         self.memory = self.layer.calculate_memory()
 
@@ -88,8 +93,18 @@ class Layer(object):
         self._inplace_output = False
 
     @property
+    def c_builder(self):
+        if not hasattr(self, '_c_builder'):
+            self._c_builder = CBuilder()
+        return self._c_builder
+
+    @property
     def name(self):
         return self._name
+
+    @property
+    def layer_type_name(self):
+        return self.__class__.__name__
 
     @property
     def options(self):
@@ -125,6 +140,8 @@ class Layer(object):
         str
             embedia type name for layer/element.
         """
+        if hasattr(self, '_struct_data_type'):
+            return self._struct_data_type
         return self.embedia_type_name + '_layer_t'
 
 
@@ -242,12 +259,14 @@ class Layer(object):
     def is_quantizable(self):
         return self._support_quantization
 
-    def convert_to_embedia_data(self, data_converter, values, fit=True):
+    def convert_to_embedia_data(self, data_converter, values, fit=True, scale_param=None):
         if fit:
             data_converter.fit(values)
+        scale_param = '' if scale_param is  None else f' * {scale_param}'
+
         conv_values = data_converter.transform(values)
         if self.is_data_quantized:
-            quant_params = f', {{ {data_converter.scale}, {data_converter.zero_pt} }}'
+            quant_params = f', {{ {data_converter.scale}{scale_param}, {data_converter.zero_pt} }}'
         else:
             quant_params = ''
         return (conv_values, quant_params)
@@ -427,6 +446,31 @@ class Layer(object):
         """
         return 0
 
+    def calculate_ACOPS(self):
+        """
+        Calculates the total number of non-MACC operations in the layer, including:
+        - **Arithmetic operations**: Element-wise additions, subtractions, or multiplications (e.g., bias additions).
+        - **Comparison operations**: Relu, MaxPooling, or threshold-based activations.
+        - **Assignment operations**: Memory load/store operations (e.g., tensor writes/reads).
+
+        This is a **base/default implementation** meant to be overridden by specific layers.
+        By default, returns 0 (no non-MACC operations).
+
+        Returns
+        -------
+        int
+            Total count of non-MACC operations (ACOPS = Arithmetic + Comparison + Assignment ops).
+            Units: Integer number of operations (e.g., 1000 means 1k ACOPS).
+
+        Notes
+        -----
+        - MACC (Multiply-Accumulate) operations are **excluded** from this count.
+        - For layers with no non-MACC ops (e.g., pure linear layers without bias), return 0.
+        - Override this method in subclasses (e.g., Conv2D, ReLU) to provide layer-specific counts.
+        """
+        return 0  # Default: No non-MACC operations
+
+
     def calculate_memory(self):
         """
         calculates amount of memory required to store the data of layer
@@ -474,7 +518,7 @@ class Layer(object):
         """
         return ''
 
-    def debug_function(self, param):
+    def debug_function(self, param, full_quant=False):
         """
         generates C code with the debug function invocation with the output
         result of the layer to be implemented in the file "embedia_debug.c".
@@ -486,6 +530,8 @@ class Layer(object):
         param : str
             name of the variable to be used in the invocation of the C
             function that implements the debug function.
+        full_quant : bool
+            add quantization param whether to return full quantization or not.
         Returns
         -------
         str
@@ -494,4 +540,7 @@ class Layer(object):
         """
         name = self.name
         dbg_fn = 'print_' + self.output_data_type
+        if full_quant:
+            return f'''{dbg_fn}_quant("{name}", {param}, {param}.qparam);'''
+
         return f'''{dbg_fn}("{name}", {param});'''

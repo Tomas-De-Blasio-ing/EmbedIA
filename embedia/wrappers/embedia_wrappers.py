@@ -14,12 +14,8 @@ class EmbediaWrapper(LayerWrapper):
 class EmbediaSpectrumWrapper(EmbediaWrapper):
 
     @property
-    def n_fft(self):
-        return self._target.n_fft
-
-    @property
-    def n_mels(self):
-        return self._target.n_mels
+    def frame_length(self):
+        return self._target.frame_length
 
     @property
     def input_length(self):
@@ -27,20 +23,34 @@ class EmbediaSpectrumWrapper(EmbediaWrapper):
 
     @property
     def sample_rate(self):
-        return self._target.input_fs
+        return self._target.input_sr
 
     @property
-    def n_blocks(self):
-        return self._target.n_blocks
+    def n_frames(self):
+        return self._target.n_frames
 
     @property
-    def noverlap(self):
-        return self._target.noverlap
+    def n_channels(self):
+        if self._target.n_channels is None:
+            return 1
+        return self._target.n_channels
 
     @property
-    def step(self):
-        return self._target.step
+    def overlap_length(self):
+        return self._target.overlap_length
+
+    @property
+    def hop_length(self):
+        return self._target.hop_length
 
     @property
     def shape(self):
         return self._target.shape
+
+    @property
+    def window(self):
+        return self._target.window
+
+    @property
+    def convert_to_db(self):
+        return self._target.convert_to_db

@@ -35,15 +35,6 @@ void * swap_alloc(size_t s){
  * Returns:
  *  search result - index of the maximum value
  */
-
-/*
- * argmax()
- *  Finds the index of the largest value within a vector of data (data1d_t)
- * Parameters:
- *  data => data of type data1d_t to search for max.
- * Returns:
- *  search result - index of the maximum value
- */
 uint32_t argmax(data1d_t data){
     fixed max = data.data[0];
     uint32_t i, pos = 0;

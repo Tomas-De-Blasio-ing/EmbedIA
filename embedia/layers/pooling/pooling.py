@@ -35,6 +35,39 @@ class Pooling(NeuralNetLayer):
     def __init__(self, model, wrapper, **kwargs):
         super().__init__(model, wrapper, **kwargs)
 
+    def calculate_ACOPS(self):
+        """
+        Calculates non-MACC operations for Pooling layers:
+        - Comparison operations (MaxPooling)
+        - Arithmetic operations (AveragePooling)
+        - Memory access operations
+
+        Returns
+        -------
+        int
+            Total count of non-MACC operations (ACOPS)
+        """
+        total_output_elements = self.output_size
+
+        pool_type = self._wrapper.function_name # Pooling-specific operations
+
+        if pool_type == 'max':
+            # MaxPool: (kernel_size - 1) comparisons per output element
+            kernel_area = self._wrapper.pool_size[0] * self._wrapper.pool_size[1]
+            pool_ops = total_output_elements * (kernel_area - 1)
+        elif pool_type == 'average':
+            # AveragePool: kernel_size additions + 1 division per output element
+            kernel_area = self._wrapper.kernel_size[0] * self._wrapper.kernel_size[1]
+            pool_ops = total_output_elements * (kernel_area + 1)
+        else:
+            pool_ops = 0
+
+        # Memory operations (1 read per input element + 1 write per output element)
+        # For pooling, we count full input reads (conservative estimate)
+        input_elements = self.input_shape[0] * self.input_shape[1] * self.input_shape[2]
+        memory_ops = input_elements + total_output_elements
+
+        return pool_ops + memory_ops
 
     @property
     def pool_name(self):
@@ -55,6 +88,11 @@ class Pooling(NeuralNetLayer):
 
         """
         return '%s_pooling%dd_layer' % (self._wrapper.function_name, self._wrapper.dimensions)
+
+
+    @property
+    def layer_type_name(self):
+        return f'{self.__class__.__name__}({self.wrapper.function_name})'
 
     @property
     def struct_data_type(self):

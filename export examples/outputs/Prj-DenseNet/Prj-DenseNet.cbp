@@ -35,22 +35,38 @@
         <Unit filename="main.c">
             <Option compilerVar="CC" />
         </Unit>
-        <Unit filename="embedia.c">
+        <Unit filename="fixed.c">
             <Option compilerVar="CC" />
         </Unit>
-        <Unit filename="embedia.h" />
-        <Unit filename="rain_predictor_model.c">
+        <Unit filename="fixed.h" />
+        <Unit filename="common.c">
             <Option compilerVar="CC" />
         </Unit>
-        <Unit filename="rain_predictor_model.h" />
+        <Unit filename="common.h" />
+        <Unit filename="neural_net.c">
+            <Option compilerVar="CC" />
+        </Unit>
+        <Unit filename="neural_net.h" />
         <Unit filename="quant8.c">
             <Option compilerVar="CC" />
         </Unit>
         <Unit filename="quant8.h" />
-        <Unit filename="embedia_debug.c">
+        <Unit filename="sequential_model.c">
             <Option compilerVar="CC" />
         </Unit>
-        <Unit filename="embedia_debug.h" />
+        <Unit filename="sequential_model.h" />
+        <Unit filename="quant8.c">
+            <Option compilerVar="CC" />
+        </Unit>
+        <Unit filename="quant8.h" />
+        <Unit filename="fixed.c">
+            <Option compilerVar="CC" />
+        </Unit>
+        <Unit filename="fixed.h" />
+        <Unit filename="embedia_debug_quant.c">
+            <Option compilerVar="CC" />
+        </Unit>
+        <Unit filename="embedia_debug_quant.h" />
         <Unit filename="embedia_debug_def.h" />
         <Unit filename="example_file.h" />
 		<Extensions>

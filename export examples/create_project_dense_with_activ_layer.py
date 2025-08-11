@@ -46,7 +46,7 @@ options.data_type = ModelDataType.FLOAT
 options.debug_mode = DebugMode.DATA
 
 # Normalizer not included in the model
-options.normalizer = scaler
+options.preprocessing = scaler
 
 data = np.array([
     [34,-1,1005.63,24,4,43,26,9,-10,1009,999, 0],

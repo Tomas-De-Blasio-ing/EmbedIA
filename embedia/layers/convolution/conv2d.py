@@ -54,24 +54,98 @@ class Conv2D(NeuralNetLayer):
         self._use_data_structure = True  # this layer require data structure initialization
 
 
+    def calculate_params(self):
+        """
+        Calculates the number of trainable and non-trainable parameters in a 2D convolutional layer.
+
+        Returns
+        -------
+        tuple
+            (number_of_trainable_params, number_of_non_trainable_params)
+        """
+
+        # A standard Conv2D layer has only trainable parameters: kernel weights + biases
+
+        # Shape convention: (num_filters, num_channels, kernel_height, kernel_width)
+        n_filters, n_channels, n_rows, n_cols = self.wrapper.weights.shape
+
+        # Kernel parameters: each filter has (n_channels × kernel_height × kernel_width) weights
+        # Total across all filters: n_filters × n_channels × n_rows × n_cols
+        trainable_kernels = n_filters * n_channels * n_rows * n_cols
+
+        trainable_biases = n_filters # Bias parameters: one bias per output filter
+
+        total_trainable = trainable_kernels + trainable_biases
+        total_non_trainable = 0 # Standard Conv2D layers have no non-trainable parameters
+
+        return (total_trainable, total_non_trainable)
+    #
+    # def calculate_MAC(self):
+    #     """
+    #     calculates amount of multiplication and accumulation operations
+    #     Returns
+    #     -------
+    #     int
+    #         amount of multiplication and accumulation operations
+    #
+    #     """
+    #     # layer dimensions
+    #     n_filters, n_channels, n_rows, n_cols = self._wrapper.weights.shape
+    #
+    #     # estimate amount multiplication and addition operations
+    #     out_size = self.output_size
+    #     # MACs =  (n_rows * n_cols *  n_filters) * in_size
+    #     MACs = out_size*n_cols*n_rows*n_channels
+    #
+    #     return MACs
+
     def calculate_MAC(self):
         """
-        calculates amount of multiplication and accumulation operations
+        Calculates the number of Multiply-Accumulate (MAC) operations in a 2D convolutional layer.
+
+        For a conv layer, each output element requires:
+        - n_channels * kernel_height * kernel_width multiplications
+        - (n_channels * kernel_height * kernel_width - 1) additions
+        (Each multiply-add pair counts as 1 MAC)
+
         Returns
         -------
         int
-            amount of multiplication and accumulation operations
-
+            Total number of MAC operations for the layer
         """
-        # layer dimensions
+        # Shape: (num_filters, num_channels, kernel_height, kernel_width)
         n_filters, n_channels, n_rows, n_cols = self._wrapper.weights.shape
 
-        # estimate amount multiplication and addition operations
-        out_size = self.output_size
-        # MACs =  (n_rows * n_cols *  n_filters) * in_size
-        MACs = out_size*n_cols*n_rows*n_channels
+        # Calculate total MAC operations:
+        # = num_output_pixels * operations_per_pixel
+        # = (out_h * out_w * n_filters) * (n_channels * kernel_h * kernel_w)
+        total_MACs = self.output_size * n_filters * n_channels * n_rows * n_cols
 
-        return MACs
+        return total_MACs
+
+    def calculate_ACOPS(self):
+        """
+        Calculates the number of non-MACC operations (ACOPS) in a Conv2D layer:
+        - Bias additions (arithmetic)
+        - Memory access operations (load/store)
+
+        Returns
+        -------
+        int
+            Total count of non-MACC operations (ACOPS)
+        """
+        # Shape: (num_filters, num_channels, kernel_height, kernel_width)
+        n_filters, _, _, _ = self.wrapper.weights.shape
+
+        output_size = self.output_size  # Get output feature map dimensions (height * width)
+
+        # Bias additions: 1 addition per output element (if bias exists)
+        bias_ops = (output_size * n_filters) * len(self.wrapper.biases)
+
+        # Memory operations: minimum 2 memory ops per output element: write output + read input patch
+        memory_ops = 2 * output_size * n_filters
+
+        return bias_ops  + memory_ops # Total ACOPS = sum of all non-MACC operations
 
     def calculate_memory(self):
         """

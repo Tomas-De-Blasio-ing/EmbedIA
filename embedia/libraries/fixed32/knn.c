@@ -94,14 +94,14 @@ void k_neighbors_regressor_layer(k_neighbors_regressor_layer_t layer, data1d_t i
 
     // Fase 1: Llenar el heap con los primeros k elementos
     for (int i = 0; i < layer.n_neighbors; i++) {
-        fixed distance = euclidean_distance(layer.neighbors_features + i * layer.n_features, input.data, layer.n_features);
+        fixed distance = layer.distance_fn(layer.neighbors_features + i * layer.n_features, input.data, layer.n_features);
         heap[i] = (DistanceIndex){distance, i};
     }
     build_max_heap(heap, layer.n_neighbors); // Construir el heap máximo
 
     // Fase 2: Procesar el resto de los elementos
     for (int i = layer.n_neighbors; i < layer.n_samples; i++) {
-        fixed distance = euclidean_distance(layer.neighbors_features + i * layer.n_features, input.data, layer.n_features);
+        fixed distance = layer.distance_fn(layer.neighbors_features + i * layer.n_features, input.data, layer.n_features);
         if (distance < heap[0].distance) {
             heap[0] = (DistanceIndex){distance, i};
             max_heapify(heap, layer.n_neighbors, 0); // Ajustar el heap

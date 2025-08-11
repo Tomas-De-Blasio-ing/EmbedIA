@@ -1,4 +1,3 @@
-import larq as lq
 import sys
 # add parent folder to path in order to find EmbedIA folder
 sys.path.insert(0, '..')
@@ -67,9 +66,11 @@ options.files = ProjectFiles.ALL
 # if True, remove output folder and start a clean export
 options.clean_output = True
 
-
-lq.models.summary(model)
-
+try:
+    import larq as lq
+    lq.models.summary(model)
+except:
+    model.summary()
 
 
 ############# Generate project #############

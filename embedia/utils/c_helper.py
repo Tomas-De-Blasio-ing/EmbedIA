@@ -80,3 +80,76 @@ def declare_array2(toti,xBits,lista_contadores,dt_type, var_name, dt_conv, data_
 
     return code
 
+
+class CBuilder:
+    """Text builder with indentation support using simplified method names."""
+
+    def __init__(self, indent_size=4):
+        self.indent_size = indent_size
+        self._current_indent = 0
+        self._lines = []
+
+    def add(self, text=""):
+        """Add text with current indentation."""
+        if text:
+            indent = ' ' * self._current_indent
+            self._lines.append(indent + text.replace('\n', '\n' + indent))
+        return self
+
+    def inc(self):
+        """Increase indentation level."""
+        self._current_indent += self.indent_size
+        return self
+
+    def dec(self):
+        """Decrease indentation level."""
+        self._current_indent = max(0, self._current_indent - self.indent_size)
+        return self
+
+    def new_block(self, header):
+        """
+        Add a block with automatic indentation.
+
+        Args:
+            header: Opening line (e.g., "if (condition) {")
+        """
+        self.add(header).inc()
+        return self  # Just return self for chaining
+
+    def end_block(self, footer=""):
+        """Close a block with optional footer."""
+        self.dec()
+        if footer:
+            self.add(footer)
+        return self
+
+    def get_code(self):
+        """Return the built text as a single string."""
+        return '\n'.join(self._lines)
+
+    def __str__(self):
+        return self.get_code()
+
+    def clear(self):
+        """Reset the builder."""
+        self._lines = []
+        self._current_indent = 0
+        return self
+
+    def to_array(self, values, sep=', ', fmt=''):
+        formatted_values = []
+        for x in values:
+            try:
+                formatted_values.append(f"{x: {fmt}}")
+            except (ValueError, TypeError):
+                formatted_values.append(str(x))
+        return sep.join(formatted_values)
+
+    def indent(self, text, times=1, char=' '):
+        """apply text with indentation."""
+        indent_size = self.indent_size*times
+        indent_block = char * indent_size
+        return indent_block + text.replace('\n', '\n' + indent_block)
+
+
+

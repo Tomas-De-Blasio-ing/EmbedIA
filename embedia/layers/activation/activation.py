@@ -24,6 +24,51 @@ class Activation(NeuralNetLayer):
         #     # rename with keras layer partial name
         #     self._name = model.get_unique_name(wrapper.name + '_' + self._activation_function.get_function_name())
 
+    def calculate_ACOPS(self):
+        """
+        Calculates non-MACC operations for activation layers including:
+        - Comparison operations (ReLU, LeakyReLU)
+        - Exponential operations (Sigmoid, Tanh)
+        - Memory access operations
+
+        Returns
+        -------
+        int
+            Total count of non-MACC operations (ACOPS)
+        """
+        total_output_elements = self.output_size
+
+        # Get activation type from wrapper
+        activation_type = self.wrapper.function_name
+
+        if activation_type:
+            if activation_type in ['relu', 'leakyrelu']:
+                # ReLU: 1 comparison per element (x > 0 ? x : 0)
+                # LeakyReLU: 1 comparison + 1 multiplication (for negative slope)
+                activation_ops = total_output_elements * (2 if activation_type == 'leaky_relu' else 1)
+
+            elif activation_type in ['sigmoid', 'tanh']:
+                # Sigmoid: 1 exp + 1 division + 1 addition (1/(1 + exp(-x)))
+                # Tanh: Similar complexity to sigmoid
+                activation_ops = total_output_elements * 3
+
+            elif activation_type == 'softmax':
+                # Softmax: exp + sum + division for each element
+                activation_ops = total_output_elements * 3  # Simplified estimate
+
+            else:
+                activation_ops = 0
+
+        # Memory operations (1 read + 1 write per element)
+        memory_ops = 2 * total_output_elements
+
+        return activation_ops + memory_ops
+
+    @property
+    def layer_type_name(self):
+        return f'{self.__class__.__name__}({self.wrapper.function_name})'
+
+
     def invoke(self, input_name, output_name):
         """
         Generates C code for the invocation of the EmbedIA function that
@@ -49,7 +94,10 @@ class Activation(NeuralNetLayer):
         """
         output_size = self.output_size # number of elements number
 
-        qparams = ''
+        if self.is_data_quantized:
+            qparams = f'&{output_name}.qparam'
+        else:
+            qparams = ''
         act_fncs = ActivationFunctions(self._model, self._wrapper)
 
         return act_fncs.invoke(f'{output_name}.data', output_size, qparams)

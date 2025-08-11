@@ -354,31 +354,22 @@ void depthwise_conv2d_layer(depthwise_conv2d_layer_t layer, data3d_t input, data
 
 
 
-/*
- * neuron_forward()
- *  Function that performs the forward of a neuron in front of a given set of input data.
+/**
+ * Computes the dot product between two vectors and adds a bias term.
  * Parameters:
- *  neuron_t neuron => neuron with its weights and bias loaded.
- *  flatten_data_t input => input data in vector form (flatten_data_t).
+ *  weights => Vector of weights (size: length)
+ *  bias    => Bias term to add
+ *  input   => Input vector (size: length)
+ *  length  => Size of the vectors
  * Returns:
- *  fixed => result of the operation         
+ *  Dot product (weights · input) + bias
  */
-
-static float neuron_forward(neuron_t neuron, data1d_t input){
-    uint32_t i;
-    dfixed result = 0;
-
-    for(i=0;i<input.length;i++){
-        result += DFIXED_MUL(input.data[i],neuron.weights[i]);
+static fixed dot_product_bias(const fixed *weights, float bias, const fixed *input, uint32_t length) {
+    dfixed result = bias;
+    for (uint32_t i = 0; i < length; i++) {
+        result += DFIXED_MUL(weights[i], input[i]);
     }
-
-	result =  result + FIXED_TO_DFIXED(neuron.bias);
-
-	if (result > DFIX_MAX)
-		return FIX_MAX;
-	else if (result < DFIX_MIN)
-		return FIX_MIN;
-	return DFIXED_TO_FIXED(result);
+    return DFIXED_TO_FIXED(result);
 }
 
 /*
@@ -389,14 +380,19 @@ static float neuron_forward(neuron_t neuron, data1d_t input){
  *  input       => structure data1d_t with the input data to process.
  *  *output     => structure data1d_t to store the output result.
  */
-void dense_layer(dense_layer_t dense_layer, data1d_t input, data1d_t * output){
-    uint32_t i;
+void dense_layer(dense_layer_t *layer, data1d_t *input, data1d_t *output) {
+    output->length = layer->output_size;
+    output->data = (fixed*)swap_alloc(sizeof(fixed) * output->length);
 
-    output->length = dense_layer.n_neurons;
-    output->data = (fixed*)swap_alloc(sizeof(fixed)*dense_layer.n_neurons);
-
-    for(i=0;i<dense_layer.n_neurons;i++){
-        output->data[i] = neuron_forward(dense_layer.neurons[i],input);
+    for (uint32_t i = 0; i < layer->output_size; i++) {
+        // Get the weights for the i-th neuron: strides across input_size
+        const fixed *neuron_weights = &layer->weights[i * layer->input_size];
+        output->data[i] = dot_product_bias(
+            neuron_weights,          // Peso del i-ésimo neurón
+            layer->biases[i],         // Bias del i-ésimo neurón
+            input->data,              // Datos de entrada
+            input->length             // Tamaño del vector de entrada
+        );
     }
 }
 
@@ -447,7 +443,7 @@ void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
 
 
 /*
- * avg_pooling_2d()
+ * average_pooling_2d()
  *  Function that applies an average pooling to an input with a window size of received
  *  by parameter (uint16_t strides)
  * Parameters:
@@ -455,7 +451,7 @@ void max_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* outpu
  *  *output => pointer to the data3d_t structure where the result will be stored.
  */
 
-void avg_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output){
+void average_pooling2d_layer(pooling2d_layer_t pool, data3d_t input, data3d_t* output){
     uint32_t c,i,j,aux1,aux2;
     dfixed cant = INT_TO_FIXED(pool.size*pool.size);
     dfixed avg = 0;
@@ -526,6 +522,18 @@ void relu_activation(fixed *data, uint32_t length){
 
     for(i=0;i<(length);i++){
         data[i] = data[i] < 0 ? 0 : data[i];
+    }
+}
+
+
+void relu6_activation(fixed *data, uint32_t length) {
+#define FIXED_SIX INT_TO_FIXED(6)
+    for (uint32_t i = 0; i < length; i++) {
+        if (data[i] < 0)
+            data[i] = 0;
+        else if (data[i] > FIXED_SIX)
+            data[i] = FIXED_SIX;
+        // sino, el valor queda igual
     }
 }
 

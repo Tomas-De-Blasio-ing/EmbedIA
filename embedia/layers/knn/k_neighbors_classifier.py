@@ -3,7 +3,7 @@ import numpy as np
 
 
 class KNeighborsClassifier(KnnBaseLayer):
-    support_quantization = False  # support quantized data
+    support_quantization = True  # support quantized data
 
     def __init__(self, model, wrapper, **kwargs):
         super().__init__(model, wrapper, **kwargs)
