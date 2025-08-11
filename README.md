@@ -34,10 +34,12 @@ Currently it is possible to incorporate certain layers to the neural network mod
 Layers based from Keras:
 * <a href="https://keras.io/api/layers/convolution_layers/convolution2d/">Conv2D</a>
 * <a href="https://keras.io/api/layers/convolution_layers/separable_convolution2d/">SeparableConv2D</a>
+* <a href="https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/">DepthwiseConv2D</a>
 * <a href="https://keras.io/api/layers/core_layers/dense/">Dense</a>
 * <a href="https://keras.io/api/layers/pooling_layers/max_pooling2d/">MaxPooling2D</a>
 * <a href="https://keras.io/api/layers/pooling_layers/average_pooling2d/">AveragePooling2D</a>
 * <a href="https://keras.io/api/layers/reshaping_layers/flatten/">Flatten</a>
+* <a href="https://keras.io/api/layers/reshaping_layers/zero_padding2d/">ZeroPadding2D</a>
 * <a href="https://keras.io/api/layers/normalization_layers/batch_normalization/">BatchNormalization</a>
 
 Activation functions from Keras:
@@ -54,14 +56,20 @@ Layers from Larq:
 
 Layers from Scikit-Learn:
 * Integrated for preprocessing:
-* * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html">MaxAbsScaler</a>
-* * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html">MinMaxScaler</a>
-* * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html">StandardScaler</a>
-* * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html">RobustScaler</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html">MaxAbsScaler</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html">MinMaxScaler</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html">StandardScaler</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html">RobustScaler</a>
 
 * Models:
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html">KNeighborsClassifier</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html">KNeighborsRegressor</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html">SvmClassifier</a>
+  * <a href="https://scikit-learn.org/stable/modules/svm.html">SvmLinearClassifier</a>
+  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html">DecisionTreeClasifier</a>
 
-
+EmbedIA native layers:
+* <a href="">STFT for 1D multi-spectrum</a>
 
 ## Getting started 🚀 <A NAME="started"></A>
 In order to use the EmbedIA Python converter, the first step is to clone the repository
@@ -71,7 +79,7 @@ git clone https://github.com/Embed-ML/EmbedIA.git
 cd EmbedIA
 ```
 
-Open the <a href="https://github.com/Embed-ML/EmbedIA/blob/main/create_embedia_project.py">create_embedia_project.py</a> script and configure the converter parameters: 
+Open the <a href="https://github.com/Embed-ML/EmbedIA/blob/main/create_embedia_project.py">create_embedia_project.py</a> script and configure the converter parameters:
 * _OUTPUT_FOLDER_: output folder path
 * _PROJECT_NAME_: generated project name
 * _MODEL_FILE_: model path in .h5 format to use
@@ -108,7 +116,7 @@ Open the <a href="https://github.com/Embed-ML/EmbedIA/blob/main/create_embedia_p
   * ```{ProjectFiles.LIBRARY}```
 * _options.model_: supported model to convert (Tensorflow, Scikit-Learn, et.c)
 * _options.preprocessing_: list/object for preprocessing data (e.g.: normalization)
-  * ```options.example_data = samples```
+  * ```options.preprocessing_ = []```
 * _options.example_data_: array of data to include as examples:
   * ```options.example_data = samples```
 * _options.example_ids_: array of id of data in example_data property:
@@ -126,18 +134,18 @@ If the process was successful, a message will be displayed indicating where the 
 
 <br>
 
-<strong>Example:</strong> In the following Colab there is an example of the use of the EmbedIA converter to create a project in C language for the classification of the images of the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html">digits dataset</a>: 
+<strong>Example:</strong> In the following Colab there is an example of the use of the EmbedIA converter to create a project in C language for the classification of the images of the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html">digits dataset</a>:
 <p align=center><a href="https://colab.research.google.com/github/Embed-ML/EmbedIA/blob/main/Using_EmbedIA.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
 Or an example of simulation in the Wokwi online environment: https://wokwi.com/projects/359745013247499265
 
 
 ## EmbedIA in C 👍 <A NAME="inC"></A>
-To use the EmbedIA features in the microcontroller, you need to include model initialization and inference execution in your code, using the provided functions: 
+To use the EmbedIA features in the microcontroller, you need to include model initialization and inference execution in your code, using the provided functions:
 
 * ```void model_init(void)```: function in charge of executing the initialization of the model in C language from the load of the weights obtained in Python of the model trained through Tensorflow/Keras
 * ```int model_predict(input, * results)```: method that will finally execute the inference using the input data passed by parameter (input). It builds the architecture of the network, that is, it is responsible for concatenating the outputs of the layers in the correct order. In this way, a vector of probabilities is obtained for each class (received by parameter, * results) and the value of the class with greater confidence (integer value returned), given a certain input passed by parameter to the function.
 
-<strong>Example:</strong> 
+<strong>Example:</strong>
 ```c
 // model initialization
 model_init();
