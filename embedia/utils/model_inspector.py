@@ -80,7 +80,7 @@ class ModelInspector(object):
             try:
                 # Intentar metodo moderno
                 submodel = Model(inputs=self._model.inputs, outputs=layer.output)
-                output = submodel.predict(inp_data)
+                output = submodel.predict(inp_data, verbose=False)
             except Exception:
                 # Fallback para versiones antiguas con K.function
                 func = K.function([self._model.get_layer(index=0).input], layer.output)

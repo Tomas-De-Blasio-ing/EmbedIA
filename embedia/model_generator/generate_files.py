@@ -7,10 +7,12 @@ from embedia.model_generator.project_options import (
         DebugMode
 )
 from embedia.utils import file_management
+from embedia.utils.c_helper import replace_c_define, CBuilder, ArduinoBuilder
 from embedia.model_generator.project_options import BinaryBlockSize
 from embedia.core.unimplemented_layer import UnimplementedLayer
 from embedia.core.dummy_layer import DummyLayer
 from embedia.core.embedia_model import OutputPredictionType
+
 
 def multi_replace(adict, text):
     # Create a regular expression from all of the dictionary keys
@@ -35,6 +37,7 @@ def generate_embedia_library(embedia_model, src_folder, dst_folder, ext_h, ext_c
 
     # files to add "#include"
     update_include_files = ['common.h']
+    update_define_files = {'common.c': ('ALLOC_BUFFER_SZ', embedia_model.get_buffer_layer_max_size())}
 
     filenames = os.listdir(src_folder)
     required_files = embedia_model.required_files
@@ -87,9 +90,12 @@ def generate_embedia_library(embedia_model, src_folder, dst_folder, ext_h, ext_c
 
         src_file = os.path.join(src_folder, filename)
         dst_file = os.path.join(dst_folder, new_name)
-        if filename in update_include_files:
+        if filename in update_include_files or filename in update_define_files.keys():
             content = file_management.read_from_file(src_file)
-            content = multi_replace({'{includes}': includes_h}, content)
+            if filename in update_include_files:
+                content = multi_replace({'{includes}': includes_h}, content)
+            if filename in update_define_files.keys():
+                content = replace_c_define(content, update_define_files[filename])
             file_management.save_to_file(dst_file, content)
         else:
             file_management.copy(src_file, dst_file)
@@ -274,10 +280,12 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
 
     # Prepare includes
     if options.project_type == ProjectType.ARDUINO:
+        coder = ArduinoBuilder()
         src_c += "arduino.c"
         includes_c = '#include "Arduino.h"\n'
         baud_rate = str(options.baud_rate)
     else:
+        coder = CBuilder()
         src_c += "c.c"
         includes_c = '#include <stdio.h>\n'
         baud_rate = "\n"
@@ -290,18 +298,16 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
     includes_c += f'#include "{filename}"\n'
 
     example_var_name = 'sample_data'
-    main_code = ''
+
+    # The code generated is a part of the main function => start indented
+    coder.inc()
 
     if options.example_data is not None:
         filename = os.path.join(dst_embedia_folder, 'example_file.h')
         includes_c += f'#include "{filename}"\n'
-        main_code += f'''
-'''
 
-    main_code += '''
-    // model initialization
-    model_init();
-'''
+    coder.append('// model initialization')
+    coder.append('model_init();')
 
     # prepare data for model input and output
     input_data_type = embedia_layers[0].input_data_type
@@ -328,62 +334,31 @@ def generate_embedia_main(embedia_model, src_folder, dst_embedia_folder, model_n
     input_data = f'''{input_data_type} input = {{ {input_dim} NULL {qparam} }};\n'''
     output_data = f'''{output_data_type} results;\n'''
 
-    main_code += '''
+    coder.append(f'''
+// make model prediction
+// uncomment corresponding code
 
-    // make model prediction
-    // uncomment corresponding code
+// int prediction = model_predict_class(input, &results);
 
-    // int prediction = model_predict_class(input, &results);
+// print predicted class id''')
 
-    // print predicted class id'''
 
-    if options.project_type == ProjectType.ARDUINO:
-        main_code += '''
-    Serial.print("Prediction class id: ");
-    Serial.println(prediction);
-'''
-        if options.example_data is not None:
-            main_code += '''
-    Serial.print("   Example class id: ");
-    Serial.println(sample_data_id);
-'''
-    else:
-        if options.example_data is not None:
-            main_code += '''
-    int i, ok=0, prediction;
-    printf("example_file.h tests\\n");
-    printf(" Error | Cls | Pred \\n");
-    printf("-------|-----|------\\n");
+    if options.example_data is not None:
+        coder.append('int i, ok=0, prediction;')
+        coder.printf('example_file.h tests\\n')
+        coder.printf('Error | Cls | Pred \\n')
+        coder.printf('------|-----|------\\n')
+        with coder.bgn('for (i=0; i<TEST_SAMPLES; i++) {'):
+            coder.append('input.data = sample_data[i];')
+            coder.append('prediction = model_predict_class(input, &results);')
+            with coder.bgn('if (prediction == sample_data_ids[i][0]) {'):
+                coder.append('ok++;')
+                coder.printf('       |  %2d |  %2d  \\n', 'sample_data_ids[i][0]', 'prediction')
+            with coder.bgn('else {'):
+                coder.printf('   X   |  %2d |  %2d  \\n', 'sample_data_ids[i][0]', 'prediction')
+        coder.printf('\\n%d correct out of %d (Accuracy: %.2f%%)\\n', 'ok', 'TEST_SAMPLES', '(100.0 * ok)/TEST_SAMPLES')
 
-    for (i=0; i<TEST_SAMPLES; i++) {
-        input.data = sample_data[i];
-        prediction = model_predict_class(input, &results);
-
-        if (prediction == sample_data_ids[i][0]) {
-            ok++;
-            printf("       |  %2d |  %2d  \\n", sample_data_ids[i][0], prediction);
-        }
-        else {
-            printf("   X   |  %2d |  %2d  \\n", sample_data_ids[i][0], prediction);
-        }
-    }
-    printf("\\n%d correct out of %d (Accuracy: %.2f%%)\\n", ok, TEST_SAMPLES, (100.0 * ok)/TEST_SAMPLES);
-'''
-        if options.example_data is not None:
-            main_code += '''
-    //printf("   Example class id: %d\\n", sample_data_id);
-'''
-
-    main_code += '''
-    /*
-
-    model_predict(input, &results);
-
-    printf("prediccion: %.5f", results.data[0]);
-
-    */
-
-'''
+    main_code = coder.get_code()
 
     c = file_management.read_from_file(src_c).format(includes=includes_c,
                                                      input_data=input_data,

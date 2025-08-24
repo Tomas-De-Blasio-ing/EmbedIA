@@ -1,7 +1,8 @@
-import warnings
+
 from tensorflow import keras
 from sklearn import preprocessing, neighbors, svm, tree
 from embedia.native.signals.transforms import stft
+from embedia.utils import messages
 
 from embedia.core.dummy_layer import DummyLayer
 from embedia.layers.convolution.separable_conv2d import SeparableConv2D
@@ -127,4 +128,4 @@ try:
 
     })
 except:
-    warnings.warn("Warning: 'larq' is missing. Certain features requiring binary neural networks may not work.", UserWarning)
+    messages.warn("'larq' package is missing. Certain features requiring binary neural networks may not work.")

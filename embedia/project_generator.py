@@ -1,8 +1,10 @@
 import os
 import shutil
+import warnings
 
 from embedia.core.model_factory import ModelFactory, DummyModel
 from embedia.model_generator.project_options import (
+        ModelMicro,
         ModelDataType,
         ProjectType,
         ProjectFiles,
@@ -17,7 +19,7 @@ from embedia.model_generator.generate_files import (
         generate_codeblock_project
     )
 
-from embedia.utils import file_management
+from embedia.utils import file_management, messages
 
 from prettytable import PrettyTable
 
@@ -66,29 +68,46 @@ class ProjectGenerator:
         self._src_datatype_folder = self._src_lib_folder + self._datatype_subfolder(self._options.data_type)
         self._src_dbg_folder = self._src_lib_folder + 'debug/'
 
+    def check_options(self):
+
+        if not os.path.exists(self._src_datatype_folder):
+            txt = f'{self._options.data_type.name} not implemented for {self._options.micro.name} micro. Falling back to GENERIC micro export.'
+            messages.warn(txt)
+            self._options.micro = ModelMicro.GENERIC
+
+        if self._options.embedia_folder is None or self._options.embedia_folder == '':
+            self.set_embedia_folder('embedia/')
+        else:
+            self.set_embedia_folder(self._options.embedia_folder)
 
     def create_project(self, output_folder, project_name, model, options):
+
+        # check existing implementation for micro+datatype
+        self.check_options()
 
         if model is None:
             model = DummyModel('No Model')
 
         embedia_model = ModelFactory.create_model(model, options)
 
-        embedia_layers = embedia_model.embedia_layers
+        #embedia_layers = embedia_model.embedia_layers
 
         # prepare folders and extension of files to copy/create
         self._prepare_folders(output_folder, project_name, options)
 
         c_ext, h_ext = self._get_files_extension()
 
+        # print layers memory size
+        model_info = self.build_model_info(embedia_model)
+        print(model_info)
+
+
         # copy library files
         if ProjectFiles.LIBRARY in options.files:
             #embedia_files = generate_embedia_library(embedia_model, self._src_datatype_folder, self._dst_folder, h_ext, c_ext, options)
             embedia_files = generate_embedia_library(embedia_model, self._src_datatype_folder, self._dst_embedia_folder, h_ext, c_ext, options)
 
-            # print layers memory size
-            model_info = self.build_model_info(embedia_model)
-            print(model_info)
+
 
         # create model files
         if ProjectFiles.MODEL in options.files:
@@ -126,22 +145,25 @@ class ProjectGenerator:
     def _datatype_subfolder(self, data_type):
         # absolute path for copying files
         if data_type == ModelDataType.FIXED8:
-            return 'fixed8/'
+            dt_folder = 'fixed8/'
         elif data_type == ModelDataType.FIXED16:
-            return 'fixed16/'
+            dt_folder = 'fixed16/'
         elif data_type == ModelDataType.FIXED32:
-            return 'fixed32/'
+            dt_folder = 'fixed32/'
         elif data_type == ModelDataType.QUANT8:
-            return 'quant8/'
+            dt_folder = 'quant8/'
         elif data_type == ModelDataType.FULL_QUANT8:
-            return 'full_quant8/'
+            dt_folder = 'full_quant8/'
         elif data_type == ModelDataType.BINARY:
-            return 'binary/'
+            dt_folder = 'binary/'
         elif data_type == ModelDataType.BINARY_FIXED32:
-            return 'binary&fixed32/'
+            dt_folder = 'binary&fixed32/'
         elif data_type == ModelDataType.BINARY_FLOAT16:
-            return 'binary&float16/'
-        return 'float/'
+            dt_folder = 'binary&float16/'
+        else:
+            dt_folder = 'float/'
+
+        return f'mcu/{self._options.micro.lname}/{dt_folder}/'
 
     def _prepare_folders(self, output_folder, project_name, options):
         # create output folder if doesnt exists
@@ -221,6 +243,8 @@ class ProjectGenerator:
         total_size = 0
         total_MACs = 0
         total_ACOPs= 0
+        block_align = 4
+
 
         for i, (l_name, l_type, params, shape, MACs, ACOPs, size) in enumerate(layers_info):
             total_size += size
@@ -229,19 +253,26 @@ class ProjectGenerator:
 
             total_params = (total_params[0] + params[0], total_params[1] + params[1])
             size = '%8.3f' % (size/1024.0)
+            buffer_size = embedia_model.get_buffer_layer_size(i, block_align)
+            buffer_size = '%8.3f' % (buffer_size / 1024.0)
             param_str= '%d' % (params[0] + params[1])
             if params[1] > 0:
                 param_str += '(%d)' % params[1]
             layer = l_type
-            layers_info[i] = (layer, l_name, param_str, shape, MACs, ACOPs, size)
+
+            layers_info[i] = (layer, l_name, param_str, shape, MACs, ACOPs, buffer_size, size)
+
+        buffer_size = embedia_model.get_buffer_layer_max_size(block_align)
+
         # print table
         table = PrettyTable()
-        table.field_names = ['EmbedIA Layer', 'Name', '#Param(NT)', 'Shape', 'MACs', 'ACOPs', 'Size (KiB)']
+        table.field_names = ['EmbedIA Layer', 'Name', '#Param(NT)', 'Shape', 'MACs', 'ACOPs', 'Buffer (KB)', 'Size (KiB)']
         table.align['EmbedIA Layer'] = 'l'
         table.align['Name'] = 'l'
         table.align['#Param(NT)'] = 'r'
         table.align['MACs'] = 'r'
         table.align['ACOPs'] = 'r'
+        table.align['Buffer (KB)'] = 'r'
         table.align['Size (KB)'] = 'r'
         table.align['#Param'] = 'r'
 #         table.add_rows(layers_info)
@@ -256,4 +287,6 @@ class ProjectGenerator:
         model_info += 'Total size in KiB....: %.3f\n' % (total_size/1024.0)
         model_info += 'Total MACs operations: %.0f\n' % total_MACs
         model_info += 'Total AC operations..: %.0f\n' % total_ACOPs
+        model_info += 'Buffer required bytes: %d\n' % buffer_size
+
         return model_info

@@ -142,7 +142,8 @@ class Normalization(NeuralNetLayer):
         sz_struct_t = 4  # types_dict[self.struct_data_type]
 
         # base data type in bits: float, fixed (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
+
         if self.options.data_type == ModelDataType.BINARY:
             dt_size = 32
 

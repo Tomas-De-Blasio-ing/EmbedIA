@@ -128,7 +128,7 @@ class QuantDense(NeuralNetLayer):
 
         # base data type in bits: float, fixed (32/16/8), binary 32
 
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
 
         # neuron structure size
         if(self.tipo_densa == 0):  # densa float

@@ -99,7 +99,7 @@ class SvmBaseLayer(Layer):
         #n_neighbors = self._wrapper.n_neighbors
 
         # base data type in bits: float, fixed (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
         dt_size /= 8
         mem_size = 0#(n_samples * n_features * dt_size) + (n_samples * dt_size);
 

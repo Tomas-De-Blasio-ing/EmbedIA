@@ -77,7 +77,7 @@ class BatchNormalization(NeuralNetLayer):
         sz_batch_norm_t = 12
 
         # base data type: float, fixed, binary (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
 
         mem_size = n_arrays * n_features * dt_size/8 + sz_batch_norm_t
 

@@ -140,7 +140,7 @@ class QuantConv2D(NeuralNetLayer):
         n_filters, n_channels, n_rows, n_cols = self.weights.shape
 
         # base data type in bits: float, fixed (32/16/8), binary 1
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
 
         # EmbedIA filter structure size
         if(self.tipo_conv == 0):  # conv2d float

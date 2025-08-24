@@ -166,7 +166,7 @@ class Conv2D(NeuralNetLayer):
         sz_filter_t = 4
 
         # base data type in bits: float, fixed (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
 
         mem_size = (n_channels * n_rows * n_cols *
                     dt_size / 8 + sz_filter_t) * (n_filters+1)

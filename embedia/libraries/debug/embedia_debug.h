@@ -1,5 +1,15 @@
 #ifndef EMBEDIA_DEBUG_H_INCLUDED
 #define EMBEDIA_DEBUG_H_INCLUDED
+/*
+ * EmbedIA - Embedded Machine Learning and Neural Networks Framework
+ * Copyright (c) 2022
+ * César Estrebou & contributors
+ * Instituto de Investigación en Informática LIDI (III-LIDI)
+ * Facultad de Informática - Universidad Nacional de La Plata (UNLP)
+ * Originally developed with student contributions
+ *
+ * Licensed under the BSD 3-Clause License. See LICENSE file for details.
+ */
 
 #include "common.h"
 

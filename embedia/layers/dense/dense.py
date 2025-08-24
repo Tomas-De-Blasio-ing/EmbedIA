@@ -108,7 +108,7 @@ class Dense(NeuralNetLayer):
         sz_neuron_t = 4
 
         # base data type in bits: float, fixed (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
 
 
         mem_size = (n_input * dt_size/8 + sz_neuron_t) * n_neurons
@@ -225,11 +225,11 @@ class Dense(NeuralNetLayer):
     // {n_input:3d} inputs
     // {n_neurons:3d} outputs/neurons
     static {data_type} weights[{n_neurons}*{n_input}] = {{
-{cb.indent(o_weights, times=2)}
+{cb.indent_text(o_weights, times=2)}
     }};
     
     static {data_type} biases[{n_neurons}*1] = {{
-{cb.indent(o_biases, times=2)}
+{cb.indent_text(o_biases, times=2)}
     }};
 
     dense_layer_t layer= {{
