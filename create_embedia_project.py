@@ -34,7 +34,7 @@ options.debug_mode = DebugMode.DISCARD
 # options.debug_mode = DebugMode.HEADERS
 # options.debug_mode = DebugMode.DATA
 
-options.files = ProjectFiles.ALL
+options.files = ProjectFiles.ALL()
 # options.files = {ProjectFiles.MAIN}
 # options.files = {ProjectFiles.MODEL}
 # options.files = {ProjectFiles.LIBRARY}

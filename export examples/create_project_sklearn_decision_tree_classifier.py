@@ -87,7 +87,7 @@ print(X_test_raw[i], y_test[i])
 options.example_data = samples
 options.example_ids = ids
 options.preprocessing = scaler
-options.files = ProjectFiles.ALL
+options.files = ProjectFiles.ALL()
 # options.files = {ProjectFiles.MAIN}
 # options.files = {ProjectFiles.MODEL}
 # options.files = {ProjectFiles.LIBRARY}

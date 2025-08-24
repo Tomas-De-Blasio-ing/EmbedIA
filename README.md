@@ -110,7 +110,7 @@ Open the <a href="https://github.com/Embed-ML/EmbedIA/blob/main/create_embedia_p
   * ```DebugMode.HEADERS```
   * ```DebugMode.DATA```
 * _options.files_: Selection of files to be executed:
-  * ```ProjectFiles.ALL```
+  * ```ProjectFiles.ALL()```
   * ```{ProjectFiles.MAIN}```
   * ```{ProjectFiles.MODEL}```
   * ```{ProjectFiles.LIBRARY}```

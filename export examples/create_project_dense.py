@@ -2,6 +2,7 @@ from tensorflow.keras.models import load_model
 from embedia.project_generator import ProjectGenerator
 from tensorflow.keras.models import Sequential
 from embedia.model_generator.project_options import (
+    ModelMicro,
     ModelDataType,
     DebugMode,
     ProjectFiles,
@@ -12,8 +13,9 @@ from tensorflow.keras import layers
 import joblib as jl
 import numpy as np
 
+
 OUTPUT_FOLDER = 'outputs/'
-PROJECT_NAME  = 'Prj-DenseNet'
+PROJECT_NAME  = 'Prj-DenseNet-Rain-F16'
 MODEL_FILE    = 'models/rain_predictor_model_with_activ_layer.h5'
 
 
@@ -32,16 +34,19 @@ options = ProjectOptions()
 # set location of EmbedIA folder
 options.embedia_folder = '../embedia/'
 
+
 # options.project_type = ProjectType.ARDUINO
 # options.project_type = ProjectType.C
 options.project_type = ProjectType.CODEBLOCK
 # options.project_type = ProjectType.CPP
 
-#options.data_type = ModelDataType.ESP32_SIMD_FLOAT
+#options.micro = ModelMicro.GENERIC
+options.micro = ModelMicro.ESP32
+
 #options.data_type = ModelDataType.FLOAT
-options.data_type = ModelDataType.FULL_QUANT8 # revisar sigmoid activation y demas
-# options.data_type = ModelDataType.FIXED32
-#options.data_type = ModelDataType.FIXED16
+#options.data_type = ModelDataType.FULL_QUANT8 # revisar sigmoid activation y demas
+options.data_type = ModelDataType.FIXED32
+# options.data_type = ModelDataType.FIXED16
 # options.data_type = ModelDataType.FIXED8
 # options.data_type = ModelDataType.QUANT8
 
@@ -78,7 +83,7 @@ ids = data[:, -1]
 options.example_data = samples
 options.example_ids = ids
 
-options.files = ProjectFiles.ALL
+options.files = ProjectFiles.ALL()
 # options.files = {ProjectFiles.MAIN}
 # options.files = {ProjectFiles.MODEL}
 # options.files = {ProjectFiles.LIBRARY}
@@ -91,8 +96,7 @@ options.clean_output = True
 generator = ProjectGenerator(options)
 generator.create_project(OUTPUT_FOLDER, PROJECT_NAME, model, options)
 
-print("Project", PROJECT_NAME, "exported in", OUTPUT_FOLDER)
-
+print(f'Project "{PROJECT_NAME}" exported in {OUTPUT_FOLDER}\n')
 
 
 from embedia.utils.model_inspector import ModelInspector

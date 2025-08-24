@@ -31,9 +31,9 @@ options = ProjectOptions()
 options.embedia_folder = '../embedia/'
 
 
-# options.project_type = ProjectType.ARDUINO
+options.project_type = ProjectType.ARDUINO
 # options.project_type = ProjectType.C
-options.project_type = ProjectType.CODEBLOCK
+# options.project_type = ProjectType.CODEBLOCK
 # options.project_type = ProjectType.CPP
 
 options.data_type = ModelDataType.FLOAT
@@ -49,7 +49,7 @@ options.debug_mode = DebugMode.DATA
 (samples, ids) = joblib.load(SAMPLES_FILE)
 
 res = model.predict(samples)
-print( (res*100).astype('int') )
+#print( (res*100).astype('int') )
 
 
 sample = samples[0].numpy()
@@ -59,7 +59,7 @@ sample = samples[0].numpy()
 options.example_data = np.array([sample])
 options.example_ids = np.array([ids[0]])
 
-options.files = ProjectFiles.ALL
+options.files = ProjectFiles.ALL()
 # options.files = {ProjectFiles.MAIN}
 # options.files = {ProjectFiles.MODEL}
 # options.files = {ProjectFiles.LIBRARY}
@@ -75,9 +75,4 @@ generator.create_project(OUTPUT_FOLDER, PROJECT_NAME, model, options)
 
 print("Project", PROJECT_NAME, "exported in", OUTPUT_FOLDER)
 
-try:
-    import larq as lq
-    lq.models.summary(model)
-except:
-    model.summary()
 
