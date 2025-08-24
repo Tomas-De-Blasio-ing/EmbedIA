@@ -20,7 +20,6 @@
 ## v0.95.0
 
 * Update EmbedIA english tutorial
-* Add Spanish version
 * Added spanish tutorial on EmbedIA
 * Some docs update
 * major update with full quantization, preprocessing pipeline and sklearn model integration
@@ -39,13 +38,12 @@
 
 ## v0.80.0
 
-* first refactoring of the EmbedIA model was carried out to support other models besides Tensorflow & bugs fixed
+* First refactoring of the EmbedIA model was carried out to support other models besides Tensorflow & bugs fixed
 * Support for properties of convolutional layer tensors was added to TensorFlow for quant8 data type
 * se agreg├│ soportes para propiedades de capas convolucionales Tensorflow para tipo de datos fixed8
 * se agreg├│ soportes para propiedades de capas convolucionales Tensorflow para tipo de datos fixed16
 * Added support for Tensorflow convolutional layer properties for float data type
-* added support for DepthwiseConv2D for asymmetric kernel, strides and padding (float data type only)
-* added support for SeparableConv2D for asymmetric kernel, strides and padding (float data type only)
+* Added support for DepthwiseConv2D for asymmetric kernel, strides and padding (float data type only)
 * Refactoring of kernel_size of filter_t structure
 * Added support for non symmetrical kernels for float data type of conv2d layer
 * Added debug information to test functions
@@ -62,8 +60,6 @@
 * Introduces initial automatic testing for layers, elements, and modules. Fixes numerous bugs discovered during the test run
 * Merge branch 'main' of https://github.com/Embed-ML/EmbedIA-dev
 * depthwise_conv2d_layer update & bug fixed
-* Update TO DO.md
-* Create TO DO.md
 * Some bugs fixed
 * Merge branch 'main' of https://github.com/Embed-ML/EmbedIA
 * An EmbedIA version for develop & test
@@ -80,8 +76,7 @@
 * Merge branch 'main' of github.com:Embed-ML/EmbedIA
 * Fix double implementation of LeakyRelu in binary/embedia.c
 * Update README.md
-* Binary .py files indentation solution
-* continuation 1
+* Binary .py files indentation solution - continuation 1
 * Binary .py files indentation solution and Fix declarations in 'for' and 'uint32_t' in argmax function of binary libraries
 * Merge pull request #7 from Embed-ML/binaryimprovement
 * Merge branch 'main' into binaryimprovement
@@ -97,6 +92,17 @@
 * Merge pull request #4 from Embed-ML/saavedramarcosdavid-patch-2
 * Update Using_EmbedIA.ipynb
 * Adding forms in colab
+* Update Using_EmbedIA.ipynb - visualization of examples
+* Elimination of i variable declarations in for
+* Update model.c - Translation of comments
+* Update README.md
+* Added a first version of several model formats convertion to TF/Keras
+* Merge branch 'main' of https://github.com/Embed-ML/EmbedIA
+* ReadMe update
+* ReadMe update
+* QuantSeparableConv2D layer added. Activation layer fixed.
+* Merge pull request #4 from Embed-ML/saavedramarcosdavid-patch-2
+* Update Using_EmbedIA.ipynb - Adding forms in colab
 * Merge pull request #3 from Embed-ML/saavedramarcosdavid-patch-1
 * Update Using_EmbedIA.ipynb
 * Fixed export of std_beta parameter
@@ -117,19 +123,18 @@
 * Readme file update
 * Big refactoring. Some new features added
 * Update README.md
-* Merge branch 'main' of github.com:Embed-Ml/EmbedIA into main
 * Update README.md
-* EmbedIA in C
+* Merge branch 'main' of github.com:Embed-Ml/EmbedIA into main
+* Update README.md - EmbedIA in C
 * add example_comment
 
 ## v0.40.0
 
 * Merge branch 'main' of github.com:Embed-Ml/EmbedIA into main
 * Update Using_EmebdIA.ipynb
-* Update Using_EmbedIA.ipynb
 * Update README.md
 * Workflow
-* Update README.md
+* Update README.md - Workflow
 
 ## v0.30.0
 
