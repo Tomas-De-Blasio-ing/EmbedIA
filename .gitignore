@@ -11,4 +11,4 @@ mini_speech_commands/
 /embedia tests/functions tests/outputs/
 /embedia tests/output/
 mini_speech_commands.zip
-Generate-Changelog.ps1
+*.ps1
