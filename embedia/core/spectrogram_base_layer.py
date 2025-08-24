@@ -101,7 +101,7 @@ class SpectrogramBaseLayer(NeuralNetLayer):
         # sz_neuron_t = types_dict['neuron_t']
 
         # # base data type in bits: float, fixed (32/16/8)
-        # dt_size = ModelDataType.get_size(self.options.data_type)
+        # dt_size = self.options.data_type.size
 
         # mem_size = (n_input * dt_size/8 + sz_neuron_t) * n_neurons
 

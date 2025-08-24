@@ -95,7 +95,11 @@ class SvmClassifier(SvmBaseLayer):
     @property
     def function_implementation(self):
 
+        # TO DO: Support quantization data
+        coder = self.c_builder
+
         struct_type = self.struct_data_type
+        (data_type, data_converter) = self.model.get_type_converter()
         name = self.name
         coefficients, intercepts = self._wrapper.coefficients
         coef_shp = coefficients.shape
@@ -103,6 +107,9 @@ class SvmClassifier(SvmBaseLayer):
         n_classes = len(self._wrapper.classes)
         n_SV = len(self._wrapper.support)
         n_features = self._wrapper.n_features
+        (conv_coefs, qp_coefs) = self.convert_to_embedia_data(data_converter, coefficients)
+        (conv_icepts, qp_icepts) = self.convert_to_embedia_data(data_converter, intercepts)
+        (conv_vectors, qp_vectors) = self.convert_to_embedia_data(data_converter, vectors)
         kernels ={
             'linear': 'SVM_KERNEL_LINEAR',
             'poly': 'SVM_KERNEL_LINEAR',
@@ -112,16 +119,16 @@ class SvmClassifier(SvmBaseLayer):
         (kernel_type,  gamma, intercept, degree) = self._wrapper.kernel
         kernel_type = kernels[kernel_type.lower()]
         init_svm_layer = f'''
-        {struct_type} init_{name}_data(void){{
-        static float icepts[] = {'{' + ', '.join(map(str, intercepts)) + '}'};
+{struct_type} init_{name}_data(void){{
+        static {data_type} icepts[] = {{ {coder.to_array(conv_icepts)} }};
         static uint16_t offsets_cls[] = {'{' + ', '.join(map(str, self._wrapper.offsets_classes)) + '}'};
-        static float vectors[{coef_shp[1]} * {self._wrapper.n_features}] = {{'''
-        for vector in vectors:
-            init_svm_layer += f'    ' + ', '.join(map(str, vector)) + ',\n'
+        static {data_type} vectors[{coef_shp[1]} * {self._wrapper.n_features}] = {{'''
+        for vector in conv_vectors:
+            init_svm_layer += f'    ' + coder.to_array(vector) + ',\n'
         init_svm_layer += f'''        }};
-        static float coefs[{coef_shp[0]}*{coef_shp[1]}] = {{ '''
-        for row in coefficients:
-            init_svm_layer += f'    ' + ', '.join(map(str, row)) + ',\n'
+        static {data_type} coefs[{coef_shp[0]}*{coef_shp[1]}] = {{ '''
+        for row in conv_coefs:
+            init_svm_layer += f'    ' + coder.to_array(row) + ',\n'
         init_svm_layer += f'''        }};
 
         svm_classifier_layer_t layer = {{

@@ -92,7 +92,7 @@ class DepthwiseConv2D(NeuralNetLayer):
         sz_filter_t = 4 # 'filter_t'
 
         # base data type in bits: float, fixed (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
         if self.options.data_type == ModelDataType.BINARY:
             dt_size = 32
 

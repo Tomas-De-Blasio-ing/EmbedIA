@@ -3,6 +3,89 @@ import numpy as np
 import tensorflow.keras.backend as K
 from embedia.utils.c_helper import CBuilder
 
+
+class LayerStats:
+    """
+    A class for accumulating and tracking statistical properties of layer data over multiple updates.
+
+    This class maintains running statistics (mean, standard deviation, min, max) for tensors/arrays
+    that are incrementally updated. It's designed for monitoring neural network layer behavior during
+    training or inference, tracking either input, output, or parameter statistics.
+
+    Statistics are computed online (without storing all values) using numerically stable algorithms.
+
+    Attributes:
+        mean (float): Current mean of all accumulated values
+        std (float): Current standard deviation of all accumulated values
+        max (float): Maximum value encountered
+        min (float): Minimum value encountered
+        count (int): Total number of values processed
+
+    Methods:
+        reset(): Resets all accumulated statistics
+        update(array): Updates statistics with new array of values
+        set_from_array(array): Replaces statistics with values computed from array
+
+    Example:
+        >>> stats = LayerStats()
+        >>> stats.update(np.array([1, 2, 3]))
+        >>> stats.update(np.array([4, 5]))
+        >>> stats.mean
+        3.0
+        >>> stats.std
+        1.4142...
+        >>> stats.max
+        5
+        >>> stats.reset()  # Clears all accumulated data
+    """
+
+    def __init__(self):
+        """Initialize a new LayerStats instance with zero statistics."""
+        self.reset()
+
+    def reset(self):
+        """Reset all accumulated statistics."""
+        self.sum = 0          # For calculating mean
+        self.sq_sum = 0       # For calculating std
+        self.max = -float('inf')
+        self.min = float('inf')
+        self.count = 0
+        self._mean = None     # Cached mean
+        self._std = None      # Cached std
+
+    def update(self, array):
+        """Update statistics with new array of values."""
+        array = np.asarray(array)
+        self.sum += array.sum()
+        self.sq_sum += (array**2).sum()
+        self.max = max(self.max, array.max())
+        self.min = min(self.min, array.min())
+        self.count += len(array)
+        # Invalidate cached values
+        self._mean = None
+        self._std = None
+
+    @property
+    def mean(self):
+        """Current mean of all accumulated values."""
+        if self._mean is None:
+            self._mean = self.sum / self.count if self.count > 0 else 0
+        return self._mean
+
+    @property
+    def std(self):
+        """Current standard deviation of all accumulated values."""
+        if self._std is None and self.count > 0:
+            variance = (self.sq_sum / self.count) - (self.mean ** 2)
+            self._std = np.sqrt(max(0, variance))  # Avoid negative due to numerical precision
+        return self._std if self.count > 0 else 0
+
+    def set_from_array(self, array):
+        """Replace current statistics with statistics from array."""
+        self.reset()
+        self.update(array)
+
+
 class LayerInfo(object):
     """
     This class defines a container for layer information:
@@ -25,6 +108,8 @@ class LayerInfo(object):
         self.class_name = embedia_layer.layer_type_name
 
         self.layer_name = embedia_layer.name
+
+        self.input_shape = self.layer.input_shape
 
         self.output_shape = self.layer.output_shape
 
@@ -92,6 +177,11 @@ class Layer(object):
         # or activation functions.
         self._inplace_output = False
 
+        self._layer_info = None
+        self._input_stats = None
+        self._output_stats = None
+        self._param_stats = None
+
     @property
     def c_builder(self):
         if not hasattr(self, '_c_builder'):
@@ -119,6 +209,24 @@ class Layer(object):
         return self._wrapper
 
     @property
+    def input_stats(self):
+        if self._input_stats is None:
+            self._input_stats = LayerStats()
+        return self._input_stats
+
+    @property
+    def output_stats(self):
+        if self._output_stats is None:
+            self._output_stats = LayerStats()
+        return self._output_stats
+
+    @property
+    def param_stats(self):
+        if self._param_stats is None:
+            self._param_stats = LayerStats()
+        return self._param_stats
+
+    @property
     def inplace_output(self):
         return self._inplace_output
 
@@ -130,6 +238,7 @@ class Layer(object):
     @property
     def use_data_structure(self):
         return self._use_data_structure
+
 
     @property
     def struct_data_type(self):
@@ -492,8 +601,12 @@ class Layer(object):
             information of layer: name, type name, #params, MACs, output shape
 
         """
+        if self._layer_info is None:
+            self._layer_info = LayerInfo(self, types_dict)
 
-        return LayerInfo(self, types_dict)
+        return self._layer_info
+
+
 
     def invoke(self, input_name, output_name):
         """

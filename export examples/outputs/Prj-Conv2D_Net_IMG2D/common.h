@@ -37,7 +37,7 @@ typedef struct{
 
 void prepare_buffers();
 
-void * swap_alloc(size_t s);
+void * swap_alloc(uint32_t s);
 
 
 /*

@@ -121,7 +121,7 @@ class QuantSeparableConv2D(NeuralNetLayer):
         point_params = n_channels * n_filters * n_rows * n_cols
 
         # base data type in bits: float, fixed (32/16/8)
-        dt_size = ModelDataType.get_size(self.options.data_type)
+        dt_size = self.options.data_type.size
 
         if (self.tipo_conv==0):
 

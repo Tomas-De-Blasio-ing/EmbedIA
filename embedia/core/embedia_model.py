@@ -339,8 +339,44 @@ class EmbediaModel(object):
 
         return data_type_explorer
 
+    def get_buffer_layer_max_size(self, align=0):
+        """
+        Calculates the required buffer size for all layers by finding the maximum
+        layer size considering memory alignment. The input size of the first layer
+        is excluded as it's pre-allocated.
+        """
+        if not self.embedia_layers:
+            return 0
 
+        # Calculate for all layers and get the maximum
+        return max( self.get_buffer_layer_size(i, align) for i in range(len(self.embedia_layers)) )
 
+    def get_buffer_layer_size(self, layer_idx, align=0):
+        """
+        Calculates the required buffer size for a specific layer considering alignment.
+        Args:
+            layer_idx: Index of the layer to calculate
+            align: Alignment requirement (0 means no alignment)
+        Returns:
+            int: The calculated size for this specific layer
+        """
+
+        def ensure_aligned(size, align):
+            """Helper to align size to specified boundary"""
+            return ((size + align - 1) // align) * align if align > 0 else size
+
+        data_type_sz = self.options.data_type.size // 8
+        layer = self.embedia_layers[layer_idx]
+
+        # First layer only needs output buffer (input is pre-allocated)
+        if layer_idx == 0:
+            return ensure_aligned(layer.output_size * data_type_sz, align)
+
+        # Other layers
+        inp_sz = ensure_aligned(layer.input_size * data_type_sz, align)
+        out_sz = ensure_aligned(layer.output_size * data_type_sz, align)
+
+        return max(inp_sz, out_sz) if layer.inplace_output else (inp_sz + out_sz)
 
 
     def get_layers_info(self):
