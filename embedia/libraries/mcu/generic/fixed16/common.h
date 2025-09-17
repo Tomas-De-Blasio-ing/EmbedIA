@@ -1,3 +1,5 @@
+#ifndef _COMMON_H
+#define _COMMON_H
 /*
  * EmbedIA - Embedded Machine Learning and Neural Networks Framework
  * Copyright (c) 2022
@@ -25,10 +27,7 @@
  * - common.h: project-specific core definitions (required)
  */
 
-#ifndef _COMMON_H
-#define _COMMON_H
-
-// Detecta el compilador y define EMBEDIA_INLINE
+// Detects compiler and define EMBEDIA_INLINE
 #if defined(__GNUC__) || defined(__clang__) || defined(__ARMCC_VERSION) || defined(__IAR_SYSTEMS_ICC__)
     #if defined(__IAR_SYSTEMS_ICC__)
         #define EMBEDIA_INLINE _Pragma("inline=forced") static inline
@@ -41,6 +40,12 @@
     #define EMBEDIA_INLINE static inline
 #endif
 
+// Generic warning Message
+#if defined(__GNUC__) || defined(__clang__)
+    #define WARN_MSG(txt) _Pragma("GCC warning \"" #txt "\"")
+#else
+    #define WARN_MSG(txt) _Pragma("message(\"WARNING: \" #txt)")
+#endif
 
 #include <stdlib.h>
 #include <stdint.h>

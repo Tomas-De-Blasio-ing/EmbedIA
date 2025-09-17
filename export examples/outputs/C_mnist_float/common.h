@@ -27,7 +27,7 @@
  * - common.h: project-specific core definitions (required)
  */
 
-// Detects compiler and define EMBEDIA_INLINE
+// Detecta el compilador y define EMBEDIA_INLINE
 #if defined(__GNUC__) || defined(__clang__) || defined(__ARMCC_VERSION) || defined(__IAR_SYSTEMS_ICC__)
     #if defined(__IAR_SYSTEMS_ICC__)
         #define EMBEDIA_INLINE _Pragma("inline=forced") static inline
@@ -40,42 +40,42 @@
     #define EMBEDIA_INLINE static inline
 #endif
 
-// Generic warning Message
-#if defined(__GNUC__) || defined(__clang__)
-    #define WARN_MSG(txt) _Pragma("GCC warning \"" #txt "\"")
-#else
-    #define WARN_MSG(txt) _Pragma("message(\"WARNING: \" #txt)")
-#endif
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "quant8.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Estructuras de datos cuantizadas
-typedef struct{
-    uint32_t length;
-    quant8 *data;
-    qparam_t qparam;     // Parámetros de cuantización
-} data1d_t;
 
-typedef struct{
-    uint16_t width;
-    uint16_t height;
-    quant8 *data;
-    qparam_t qparam;
-} data2d_t;
+/**
+ * Structure that stores an array of float data (float * data) in vector form.
+ * Specifies the number of channels, the width and the height of the array.
+ */
 
+
+/**
+ * @brief Multi-dimensional data containers for different processing stages
+ */
 typedef struct{
     uint16_t channels;
     uint16_t width;
     uint16_t height;
-    quant8 *data;
-    qparam_t qparam;
-} data3d_t;
+    float * data;
+}data3d_t;
+
+typedef struct{
+    uint16_t width;
+    uint16_t height;
+    float * data;
+}data2d_t;
+
+typedef struct{
+    uint32_t length;
+    float * data;
+}data1d_t;
 
 typedef struct{
     uint16_t h;
@@ -128,6 +128,34 @@ void * swap_alloc(uint32_t s);
  */
 uint32_t argmax(data1d_t data);
 
+/**
+ * @brief Computes the dot product of two fixed-point arrays with bias addition
+ *
+ * Computes: sum(a[i] * b[i]) + bias using fixed-point arithmetic.
+ * Designed for neural network layers where bias is added after weighted sum.
+ *
+ * @param weights  First array (e.g., neuron weights)
+ * @param input    Second array (e.g., input values)
+ * @param length   Number of elements in both arrays
+ * @param bias     Bias value to add (in fixed-point format)
+ * @return         Sum of products plus bias, in doble fixed-point format
+ *
+ *
+ */
+EMBEDIA_INLINE float dot_product_bias(
+    const float* weights,
+    const float* input,
+    uint32_t length,
+    float bias
+) {
+    float result = bias;
+    uint32_t i;
+    for (i = 0; i < length; i++){
+        result += weights[i] * input[i];
+    }
+    return result;
+}
+
 
 /**
  * @brief Computes the dot product of two float arrays
@@ -137,14 +165,7 @@ uint32_t argmax(data1d_t data);
  * @param len Number of elements
  * @return Dot product (sum of a[i]*b[i])
  */
-EMBEDIA_INLINE dfixed dot_product(const fixed* a, const fixed* b, uint32_t len) {
-    dfixed sum = FIX_ZERO;
-    uint32_t i;
-    for ( i=0; i < len; i++) {
-        sum += DFIXED_MUL(a[i],b[i]);
-    }
-    return sum;
-}
+#define dot_product(a, b, len) dot_product_bias(a, b, len, 0)
 
 
 #ifdef __cplusplus

@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
 
+MODEL_DATA_TYPE_SIZES = (32, 32, 16, 8, 8, 8, 32, 32, 16)  # Bit sizes for each data type
+
 class ModelDataType(Enum):
     """
     Enumeration of supported data types for model quantization and inference.
@@ -13,15 +15,13 @@ class ModelDataType(Enum):
     FULL_QUANT8       = 5
     BINARY            = 6
     BINARY_FIXED32    = 7
-    BINARY_FLOAT16    = 8  # Represents bfloat16 or similar reduced-precision float
+    BINARY_FLOAT16    = 8
 
-    # Private metadata (name mangling prevents Enum from treating these as members)
-    __SIZES = (32, 32, 16, 8, 8, 8, 32, 32, 16)  # Bit sizes for each data type
 
     @property
     def size(self):
         """Returns the bit size of the data type."""
-        return ModelDataType.__SIZES[self.value]
+        return MODEL_DATA_TYPE_SIZES[self.value]
 
     @property
     def lname(self):

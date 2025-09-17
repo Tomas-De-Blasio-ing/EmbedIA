@@ -27,7 +27,7 @@
  * - common.h: project-specific core definitions (required)
  */
 
-// Detecta el compilador y define EMBEDIA_INLINE
+// Detects compiler and define EMBEDIA_INLINE
 #if defined(__GNUC__) || defined(__clang__) || defined(__ARMCC_VERSION) || defined(__IAR_SYSTEMS_ICC__)
     #if defined(__IAR_SYSTEMS_ICC__)
         #define EMBEDIA_INLINE _Pragma("inline=forced") static inline
@@ -40,6 +40,12 @@
     #define EMBEDIA_INLINE static inline
 #endif
 
+// Generic warning Message
+#if defined(__GNUC__) || defined(__clang__)
+    #define WARN_MSG(txt) _Pragma("GCC warning \"" #txt "\"")
+#else
+    #define WARN_MSG(txt) _Pragma("message(\"WARNING: \" #txt)")
+#endif
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -142,7 +148,7 @@ uint32_t argmax(data1d_t data);
  *
  *
  */
-EMBEDIA_INLINE float dot_product_bias(
+/*EMBEDIA_INLINE float dot_product_bias(
     const float* weights,
     const float* input,
     uint32_t length,
@@ -154,8 +160,33 @@ EMBEDIA_INLINE float dot_product_bias(
         result += weights[i] * input[i];
     }
     return result;
-}
+}*/
 
+EMBEDIA_INLINE float dot_product_bias(
+    const float *vec_a,
+    const float *vec_b,
+    uint32_t length,
+    float bias
+){
+    // Implementación genérica optimizada con loop unrolling y punteros
+    float result = bias;
+    const float *a = vec_a;
+    const float *b = vec_b;
+    size_t remaining = length;
+
+    // Procesar en bloques de 4 para mejor rendimiento
+    for (; remaining >= 4; remaining -= 4) {
+        result += (*a++) * (*b++) + (*a++) * (*b++) +
+                  (*a++) * (*b++) + (*a++) * (*b++);
+    }
+
+    // Procesar elementos restantes
+    for (; remaining > 0; remaining--) {
+        result += (*a++) * (*b++);
+    }
+
+    return result;
+}
 
 /**
  * @brief Computes the dot product of two float arrays
