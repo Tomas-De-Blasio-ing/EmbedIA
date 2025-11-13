@@ -1,5 +1,4 @@
 # logistic_regression_base_layer.py
-# (Pega esto en el nuevo archivo)
 
 from embedia.core.layer import Layer
 
