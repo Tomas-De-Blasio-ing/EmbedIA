@@ -3,6 +3,7 @@ from embedia.core.embedia_model import EmbediaModel
 from embedia.models.tensorflow_model import TensorflowModel
 from embedia.models.sklearn_model import  SklearnModel
 
+
 class DummyModel(object):
     def __init__(self, name):
         self.name = name

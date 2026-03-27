@@ -12,3 +12,20 @@ mini_speech_commands/
 /embedia tests/output/
 mini_speech_commands.zip
 *.ps1
+
+venv/
+env/
+.env
+
+__pycache__/
+*.pyc
+
+*.exe
+*.o
+bin/
+obj/
+*.layout
+*.depend
+
+.vscode/
+output/

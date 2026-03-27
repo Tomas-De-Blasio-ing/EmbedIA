@@ -397,3 +397,48 @@ class SKLDecisionTreeClassifierWrapper(ScikitLearnWrapper):
         return OutputPredictionType.DIRECT_CLASS_ID
 
 
+class SKLLogisticRegressionWrapper(ScikitLearnWrapper):
+    
+    # self._target es el modelo entrenado 
+    
+    @property
+    def weights(self):
+        return self._target.coef_
+    
+    @property
+    def bias(self):
+        return self._target.intercept_ 
+
+    @property
+    def classes(self):
+        return self._target.classes_ 
+
+    @property
+    def n_features(self):
+        return self._target.n_features_in_
+    
+    @property    
+    def n_classes(self):
+        return len(self._target.classes_)
+    
+    @property
+    def activation(self):
+        return None
+    
+    @property
+    def input_shape(self):
+        # La entrada para regresión logística son las características
+        return (self.n_features,)
+    
+    @property
+    def output_shape(self):
+        # El resultado es un valor único (id de la clase o la probabilidad)
+        return (1,)
+    
+    @property
+    def output_prediction_type(self):
+        if self.n_classes == 2:
+            return OutputPredictionType.BINARY_OUTPUT
+        else:
+            return self.OutputPredictionType.CLASS_PROBABILITIES
+    
