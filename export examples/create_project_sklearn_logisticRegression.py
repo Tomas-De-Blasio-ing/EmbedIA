@@ -48,17 +48,3 @@ generator.create_project(OUTPUT_FOLDER, PROJECT_NAME, model, options)
 
 print(f"¡Éxito! El proyecto se generó en la carpeta: {OUTPUT_FOLDER}/{PROJECT_NAME}")
 
-# --- PRUEBA DE PREDICCIÓN ---
-# Agarramos al paciente 0 del set de test (datos CRUDOS, sin escalar)
-paciente = X_test[0]
-
-# Formateamos el array para copiarlo fácil a C
-paciente_c = ", ".join([f"{x}f" for x in paciente])
-print(f"\nfloat raw_data[] = {{ {paciente_c} }};")
-
-# Hacemos la predicción en Python
-# OJO: A model.predict le pasamos el dato ESCALADO
-paciente_escalado = scaler.transform([paciente])
-prediccion_clase = model.predict(paciente_escalado)[0]
-
-print(f"Predicción en Python (Clase): {prediccion_clase}")

@@ -1,8 +1,12 @@
+import statsmodels as sm
 
 from tensorflow import keras
 from sklearn import preprocessing, neighbors, svm, tree, linear_model
 from embedia.native.signals.transforms import stft
 from embedia.utils import messages
+
+# Statsmodels
+from statsmodels.discrete.discrete_model import BinaryResultsWrapper 
 
 from embedia.core.dummy_layer import DummyLayer
 from embedia.layers.convolution.separable_conv2d import SeparableConv2D
@@ -27,6 +31,8 @@ from embedia.layers.svm.svm_linear_classfier import SvmLinearClassifier
 from embedia.layers.decision_tree.decision_tree_classifier import DecisionTreeClasifier
 from embedia.layers.signal_processing.stft import STFT
 from embedia.layers.logistic_regression.logistic_regression import logisticRegression
+
+
 
 from embedia.wrappers.tensorflow_wrappers import (
     TensorflowWrapper,
@@ -59,6 +65,10 @@ from embedia.wrappers.larq_wrappers import (
 
 from embedia.wrappers.embedia_wrappers import (
     EmbediaSpectrumWrapper
+)
+
+from embedia.wrappers.statsmodels_wrapper import (
+    SMLogisticRegressionWrapper
 )
 
 dict_layers = {
@@ -114,7 +124,10 @@ dict_layers = {
     # DTC
     tree.DecisionTreeClassifier: (DecisionTreeClasifier, SKLDecisionTreeClassifierWrapper),
     # logistic Regression scikit-learn
-    linear_model.LogisticRegression: (logisticRegression, SKLLogisticRegressionWrapper)
+    linear_model.LogisticRegression: (logisticRegression, SKLLogisticRegressionWrapper),
+    # Logistic Regression statsmodels
+    BinaryResultsWrapper: (logisticRegression, SMLogisticRegressionWrapper)
+    
 }
 
 # register larq related layers only if larq module is installed

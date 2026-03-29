@@ -6,7 +6,7 @@
 
 typedef struct
 {
-    float * weigths; 
+    float * weights; 
     float * bias;
     float * classes;
     uint16_t n_features;

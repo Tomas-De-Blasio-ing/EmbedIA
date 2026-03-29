@@ -11,7 +11,7 @@ void logistic_regression_layer(logistic_regression_layer_t layer, data1d_t input
     if(layer.n_classes == 2){ // 1. Predicción binaria
         float z_bin = layer.bias[0]; // Asigno bías
         for(int i = 0; i<layer.n_features; i++){
-            z_bin += layer.weigths[i] * input.data[i]; 
+            z_bin += layer.weights[i] * input.data[i]; 
         }
         float pred = 1.0f / (1.0f + exp(-z_bin)); // Aplico funcion sigmoide
         output->data[0] = (pred >= 0.5f) ? layer.classes[1] :layer.classes[0]; // Si p < 0.5, elegimos la segunda clase 
@@ -23,7 +23,7 @@ void logistic_regression_layer(logistic_regression_layer_t layer, data1d_t input
             float z_i = layer.bias[i];
             for(int j=0; j < layer.n_features; j++){ // Recorro por la cantidad de características del modelo
                 int index = (i * layer.n_features) + j;
-                z_i +=  layer.weigths[index] * input.data[j];
+                z_i +=  layer.weights[index] * input.data[j];
             }
             // Buscamos el valor máximo (Argmax)
             if (z_i > max_val) {

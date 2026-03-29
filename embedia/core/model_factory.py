@@ -2,6 +2,7 @@ import inspect
 from embedia.core.embedia_model import EmbediaModel
 from embedia.models.tensorflow_model import TensorflowModel
 from embedia.models.sklearn_model import  SklearnModel
+from embedia.models.statsmodels_model import StatsmodelsModel
 
 
 class DummyModel(object):
@@ -43,5 +44,7 @@ class ModelFactory:
             return SklearnModel(model_object, options)
         elif main_module in ['common']:
             return EmbediaModel(model_object, options)
+        elif main_module in ['statsmodels']:
+            return StatsmodelsModel(model_object, options)
         else:
             raise ValueError("Object not in TensorFlow or scikit-learn module")
