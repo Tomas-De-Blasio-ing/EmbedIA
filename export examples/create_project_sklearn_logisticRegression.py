@@ -18,7 +18,8 @@ df = pd.read_csv(r"C:\Users\Usuario\Desktop\PPS\Datasets\diabetes.csv")
 X = df.drop(columns=['Outcome']).values
 y = df['Outcome'].values
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+# Se agrega random_state para pruebas
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
 # 2. Entrenamiento (Scaler + LogReg)
 
