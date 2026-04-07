@@ -9,147 +9,49 @@
 
 EmbedIA is a compact and lightweight framework capable of providing the necessary functionalities for the execution of inferences from Convolutional Neural Network models, created and trained using the Python Tensorflow/Keras library, on microcontrollers with limited hardware resources. It is designed to be compatible with the C and C++ languages for the Arduino IDE, both with support for a wide range of MCUs.
 
-## Table of Contents <A NAME="tabla-de-contenidos"></A>
-* [Workflow](#workflow)
-* [Layers](#layers)
-* [Getting started](#started)
-* [EmbedIA in C](#inC)
+# Integración de Statsmodels en EmbedIA para TinyML
 
+Este proyecto forma parte de mi investigación y desarrollo enfocados en **TinyML y Edge Computing**. El objetivo principal fue extender el framework de código abierto [EmbedIA](https://github.com/Embed-ML/EmbedIA) (desarrollado por el III-LIDI, UNLP) para soportar inferencia estadística rigurosa mediante la integración desde cero de la biblioteca **Statsmodels**.
 
-## Workflow 🔨 <A NAME="workflow"></A>
-For the conversion and use of Neural Network models in microcontrollers using EmbedIA, the following workflow must be followed:
+## 🚀 El Desafío Técnico
+Tradicionalmente, los modelos de aprendizaje automático para microcontroladores se exportan utilizando herramientas orientadas exclusivamente a la predicción (como Scikit-learn). Este proyecto introduce un enfoque basado en la **inferencia estadística**, permitiendo simplificar la arquitectura del modelo *antes* de su compilación en C.
 
-1. <strong>Generation of the model:</strong> Architecture selection, network hyperparameters and training data.
-2. <strong>Training:</strong> Neural Network Training Using Tensorflow/Keras in Python.
-3. <strong>EmbedIA Export:</strong> Export of C/C++ application with model and necessary libraries using the EmbedIA converter.
-4. <strong>Solution Deployment:</strong> Project Compilation on the Microcontroller Platform.
-5. <strong>Running Inferences:</strong>Running Inferences on the device.
+**Principales logros del desarrollo:**
+* **Desarrollo de Wrapper Personalizado:** Creación de la arquitectura interna (`SMLogisticRegressionWrapper`) para navegar y extraer los parámetros del objeto `BinaryResultsWrapper` de Statsmodels.
+* **Optimización Automatizada (Feature Selection):** Implementación de un algoritmo de **Backward Elimination** guiado por el Criterio de Información de Akaike (AIC). 
+* **Eficiencia en Hardware (TinyML):** Al aplicar el algoritmo al dataset de diagnóstico de diabetes, se logró reducir el modelo de 8 a 6 características. Esto se traduce en un menor consumo de memoria Flash, menos operaciones MACs y una huella de RAM de **solo 28 bytes** utilizando el sistema de doble búfer del framework.
+* **Fidelidad Matemática:** Validación cruzada exitosa. El código exportado en C nativo replica con exactitud de 32 bits las probabilidades generadas en el entorno de desarrollo en Python (precisión comprobada hasta el sexto decimal).
 
-<p align="center"> <img src="docs/assets/images/workflow.png" width=90%/> </p>
+## 🛠️ Tecnologías y Herramientas
+* **Lenguajes:** Python (Entrenamiento y Generación), C nativo (Inferencia en hardware).
+* **Machine Learning:** Statsmodels (Logit), Scikit-learn (StandardScaler), NumPy, Pandas.
+* **Entornos:** Code::Blocks (Validación cruzada y simulación de hardware), Git.
 
+## ⚙️ Arquitectura del Proyecto
+El desarrollo requirió la modificación y extensión del *core* del framework:
+1. `embedia/core/`: Se agregó `statsmodels_model.py` para registrar la compatibilidad del nuevo motor.
+2. `embedia/wrappers/`: Se desarrolló el traductor que aplana (`.flatten()`) y extrae los pesos ($w_i$) y el sesgo ($b_0$) de Statsmodels.
+3. `mcu/`: Reutilización de la lógica estática de inferencia (`logistic_regression.c/h`) aplicando la función Sigmoide y la gestión determinista de memoria.
 
-## Layers 🧅 <A NAME="layers"></A>
-Currently it is possible to incorporate certain layers to the neural network model for execution on microcontrollers. The layers supported by EmbedIA, implemented in the C library, are the following:
+### 🚀 Logros Clave
+- ✅ Reducción de modelo de 8 a 6 features vía Backward Elimination (AIC)
+- ✅ Uso de memoria RAM: 28 bytes (optimización extrema)
+- ✅ Validación cruzada Python-C: precisión decimal idéntica
+- ✅ Sistema de doble buffer sin fragmentación de memoria
 
-Layers based from Keras:
-* <a href="https://keras.io/api/layers/convolution_layers/convolution2d/">Conv2D</a>
-* <a href="https://keras.io/api/layers/convolution_layers/separable_convolution2d/">SeparableConv2D</a>
-* <a href="https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/">DepthwiseConv2D</a>
-* <a href="https://keras.io/api/layers/core_layers/dense/">Dense</a>
-* <a href="https://keras.io/api/layers/pooling_layers/max_pooling2d/">MaxPooling2D</a>
-* <a href="https://keras.io/api/layers/pooling_layers/average_pooling2d/">AveragePooling2D</a>
-* <a href="https://keras.io/api/layers/reshaping_layers/flatten/">Flatten</a>
-* <a href="https://keras.io/api/layers/reshaping_layers/zero_padding2d/">ZeroPadding2D</a>
-* <a href="https://keras.io/api/layers/normalization_layers/batch_normalization/">BatchNormalization</a>
+### 📊 Resultados
+<div align="center">
+  <hr>
+  <img src="docs/assets/images/SK1.PNG" width=20%/>
+  <strong>Comparación de resultados de Scikit-learn con un respectivo paciente</strong>
+  <img src="docs/assets/images/stats1.PNG" width=20%/>
+  <strong>Comparación de AIC para el dataset de diabetes, luego de aplicar el modelo logit</strong>
+  <img src="docs/assets/images/ST1.PNG" width=20%/>
+  <strong>Comparación de resultados de Statsmodels con un respectivo paciente</strong>
+  <hr>
+</div>
 
-Activation functions from Keras:
-* <a href="https://keras.io/api/layers/activations/#relu-function">ReLU</a>
-* <a href="https://keras.io/api/layers/activations/#sigmoid-function">Sigmoid</a>
-* <a href="https://keras.io/api/layers/activations/#softmax-function">Softmax</a>
-* <a href="https://keras.io/api/layers/activations/#softsign-function">Softsign</a>
-* <a href="https://keras.io/api/layers/activations/#tanh-function">Tanh</a>
+## 👨‍💻 Autor
+**Tomás Valentín De Blasio** Ingeniería en Computación | Universidad Nacional de La Plata (UNLP)
 
-Layers from Larq:
-* <a href="https://docs.larq.dev/larq/api/layers/#quantconv2d">QuantConv2D</a>
-* <a href="https://docs.larq.dev/larq/api/layers/#quantdense">QuantDense</a>
-* <a href="https://docs.larq.dev/larq/api/layers/#quantseparableconv2d">QuanSeparableConv2D</a>
-
-Layers from Scikit-Learn:
-* Integrated for preprocessing:
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html">MaxAbsScaler</a>
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html">MinMaxScaler</a>
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html">StandardScaler</a>
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html">RobustScaler</a>
-
-* Models:
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html">KNeighborsClassifier</a>
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html">KNeighborsRegressor</a>
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html">SvmClassifier</a>
-  * <a href="https://scikit-learn.org/stable/modules/svm.html">SvmLinearClassifier</a>
-  * <a href="https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html">DecisionTreeClasifier</a>
-
-EmbedIA native layers:
-* <a href="">STFT for 1D multi-spectrum</a>
-
-## Getting started 🚀 <A NAME="started"></A>
-In order to use the EmbedIA Python converter, the first step is to clone the repository
-
-```bash
-git clone https://github.com/Embed-ML/EmbedIA.git
-cd EmbedIA
-```
-
-Open the <a href="https://github.com/Embed-ML/EmbedIA/blob/main/create_embedia_project.py">create_embedia_project.py</a> script and configure the converter parameters:
-* _OUTPUT_FOLDER_: output folder path
-* _PROJECT_NAME_: generated project name
-* _MODEL_FILE_: model path in .h5 format to use
-
-* _options.embedia_folder_: folder of EmbedIA files:
-  * ```options.embedia_folder = ...```
-* _options.project_type_: type of project among those available:
-  * ```ProjectType.ARDUINO```
-  * ```ProjectType.C```
-  * ```ProjectType.CODEBLOCK```
-  * ```ProjectType.CPP```
-* _options.data_type_: selection of data type among those available:
-  * ```ModelDataType.FLOAT```
-  * ```ModelDataType.FIXED32```
-  * ```ModelDataType.FIXED16```
-  * ```ModelDataType.FIXED8```
-  * ```ModelDataType.BINARY```
-  * ```ModelDataType.BINARY-FIXED32```
-  * ```ModelDataType.BINARY-FLOAT16```
-* _options.binary_block_: options for block size of binary layers:
-  * ```ModelDataType.BinaryBlockSize.Bits8```
-  * ```ModelDataType.BinaryBlockSize.Bits16```
-  * ```ModelDataType.BinaryBlockSize.Bits32```
-  * ```ModelDataType.BinaryBlockSize.Bits64```
-* _options.debug_mode_: options for inclusion and use of debug functions:
-  * ```DebugMode.DISCARD```
-  * ```DebugMode.DISABLED```
-  * ```DebugMode.HEADERS```
-  * ```DebugMode.DATA```
-* _options.files_: Selection of files to be executed:
-  * ```ProjectFiles.ALL()```
-  * ```{ProjectFiles.MAIN}```
-  * ```{ProjectFiles.MODEL}```
-  * ```{ProjectFiles.LIBRARY}```
-* _options.model_: supported model to convert (Tensorflow, Scikit-Learn, et.c)
-* _options.preprocessing_: list/object for preprocessing data (e.g.: normalization)
-  * ```options.preprocessing_ = []```
-* _options.example_data_: array of data to include as examples:
-  * ```options.example_data = samples```
-* _options.example_ids_: array of id of data in example_data property:
-  * ```options.example_ids = ids```
-* _options.clean_output_: if True, remove output folder and start a clean export:
-  * ```options.clean_output = True```
-
-
-Run the script as follows:
-```bash
-python create_embedia_project.py
-```
-
-If the process was successful, a message will be displayed indicating where the project has been generated
-
-<br>
-
-<strong>Example:</strong> In the following Colab there is an example of the use of the EmbedIA converter to create a project in C language for the classification of the images of the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html">digits dataset</a>:
-<p align=center><a href="https://colab.research.google.com/github/Embed-ML/EmbedIA/blob/main/Using_EmbedIA.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
-Or an example of simulation in the Wokwi online environment: https://wokwi.com/projects/359745013247499265
-
-
-## EmbedIA in C 👍 <A NAME="inC"></A>
-To use the EmbedIA features in the microcontroller, you need to include model initialization and inference execution in your code, using the provided functions:
-
-* ```void model_init(void)```: function in charge of executing the initialization of the model in C language from the load of the weights obtained in Python of the model trained through Tensorflow/Keras
-* ```int model_predict(input, * results)```: method that will finally execute the inference using the input data passed by parameter (input). It builds the architecture of the network, that is, it is responsible for concatenating the outputs of the layers in the correct order. In this way, a vector of probabilities is obtained for each class (received by parameter, * results) and the value of the class with greater confidence (integer value returned), given a certain input passed by parameter to the function.
-
-<strong>Example:</strong>
-```c
-// model initialization
-model_init();
-
-// model inference
-int prediction = model_predict(input, &results);
-```
+*Proyecto desarrollado en el marco de la Práctica Profesional Supervisada (PPS) dentro del proyecto "Sistemas Inteligentes" del Instituto de Investigación en Informática III-LIDI.*
