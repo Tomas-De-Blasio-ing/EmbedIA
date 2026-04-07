@@ -43,11 +43,11 @@ El desarrollo requirió la modificación y extensión del *core* del framework:
 <div align="center">
   <hr>
   <img src="docs/assets/images/SK1.PNG" width=20%/>
-  <strong>Comparación de resultados de Scikit-learn con un respectivo paciente</strong>
+  <h4>Comparación de resultados de Scikit-learn con un respectivo paciente</h4>
   <img src="docs/assets/images/stats1.PNG" width=20%/>
-  <strong>Comparación de AIC para el dataset de diabetes, luego de aplicar el modelo logit</strong>
+  <h4>Comparación de AIC para el dataset de diabetes, luego de aplicar el modelo logit</h4>
   <img src="docs/assets/images/ST1.PNG" width=20%/>
-  <strong>Comparación de resultados de Statsmodels con un respectivo paciente</strong>
+  <h4>Comparación de resultados de Statsmodels con un respectivo paciente</h4>
   <hr>
 </div>
 
